@@ -1,12 +1,17 @@
 package com.github.taccisum.pigeon.core.entity.core;
 
+import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.pigeon.core.dao.MessageDAO;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.sp.MessageServiceProvider;
+import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Resource;
 
 /**
  * 代表一条具体的消息，可以是短信、推送、微信等等
@@ -15,8 +20,12 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @since 0.1
  */
 public abstract class Message extends Entity.Base<Long> {
-    @Autowired
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
+
+    @Resource
     protected MessageDAO dao;
+    @Resource
+    protected ServiceProviderRepo serviceProviderRepo;
 
     public Message(Long id) {
         super(id);
@@ -36,7 +45,25 @@ public abstract class Message extends Entity.Base<Long> {
      *
      * @return 投递结果
      */
-    public abstract boolean deliver();
+    public boolean deliver() {
+        boolean success = false;
+        try {
+            this.doDelivery();
+            success = true;
+        } catch (DomainException e) {
+            log.warn(String.format("消息 %d 发送失败，阿里云服务端返回异常", this.id()), e);
+        } catch (Exception e) {
+            log.error(String.format("消息 %d 发送失败", this.id()), e);
+        }
+        this.updateStatus(success ? Status.DELIVERED : Status.FAIL);
+        this.publish(new DeliverEvent(success));
+        return success;
+    }
+
+    /**
+     * 执行消息投递的具体逻辑
+     */
+    protected abstract void doDelivery() throws Exception;
 
     /**
      * 获取此消息关联的服务提供商
@@ -103,15 +130,19 @@ public abstract class Message extends Entity.Base<Long> {
     /**
      * 消息类型
      */
-    public enum Type {
+    public interface Type {
         /**
          * 邮件
          */
-        MAIL
+        String MAIL = "MAIL";
+        /**
+         * 短信
+         */
+        String SMS = "SMS";
     }
 
     /**
-     * 邮件状态
+     * 消息状态
      */
     public enum Status {
         /**

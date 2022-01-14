@@ -26,28 +26,25 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         this.pluginManager = pluginManager;
     }
 
-    public MessageTemplate createMessageTemplate(long id) {
+    public MessageTemplate createMessageTemplate(long id, String type, String spType) {
         List<MessageTemplateFactory> messageTemplateFactories = pluginManager.getExtensions(MessageTemplateFactory.class);
         messageTemplateFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (MessageTemplateFactory factory : messageTemplateFactories) {
-            if (factory.match(id, new MessageTemplateFactory.Args())) {
-                return factory.create(id);
+            MessageTemplateFactory.Criteria criteria = new MessageTemplateFactory.Criteria(type, spType);
+            if (factory.match(id, criteria)) {
+                return factory.create(id, criteria);
             }
         }
         throw new UnsupportedOperationException("not any message template factory matched.");
-    }
-
-    @Deprecated
-    public Message createMessage(long id, Message.Type type, ServiceProvider.Type spType) {
-        return createMessage(id, type.name(), spType.name());
     }
 
     public Message createMessage(long id, String type, String spType) {
         List<MessageFactory> messageFactories = pluginManager.getExtensions(MessageFactory.class);
         messageFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (MessageFactory factory : messageFactories) {
-            if (factory.match(id, new MessageFactory.Args(type, spType))) {
-                return factory.create(id);
+            MessageFactory.Criteria criteria = new MessageFactory.Criteria(type, spType);
+            if (factory.match(id, criteria)) {
+                return factory.create(id, criteria);
             }
         }
         throw new UnsupportedOperationException("not any message factory matched.");
@@ -62,8 +59,8 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         List<ServiceProviderFactory> serviceProviderFactories = pluginManager.getExtensions(ServiceProviderFactory.class);
         serviceProviderFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (ServiceProviderFactory factory : serviceProviderFactories) {
-            if (factory.match(id, new ServiceProviderFactory.Args(id))) {
-                return factory.create(id);
+            if (factory.match(id, new ServiceProviderFactory.Criteria(id))) {
+                return factory.create(id, null);
             }
         }
         throw new UnsupportedOperationException("not any service provide factory matched.");
@@ -78,8 +75,9 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         List<ThirdAccountFactory> thirdAccountFactories = pluginManager.getExtensions(ThirdAccountFactory.class);
         thirdAccountFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (ThirdAccountFactory factory : thirdAccountFactories) {
-            if (factory.match(id, new ThirdAccountFactory.Args(spType))) {
-                return factory.create(id);
+            ThirdAccountFactory.Criteria criteria = new ThirdAccountFactory.Criteria(spType);
+            if (factory.match(id, criteria)) {
+                return factory.create(id, criteria);
             }
         }
         throw new UnsupportedOperationException("not any third account factory matched.");

@@ -8,12 +8,12 @@ import lombok.Data;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 2022/1/12
  */
-public interface ThirdAccountFactory extends EntityFactory<Long, ThirdAccount, ThirdAccountFactory.Args> {
+public interface ThirdAccountFactory extends EntityFactory<Long, ThirdAccount, ThirdAccountFactory.Criteria> {
     @Data
-    class Args {
+    class Criteria {
         String spType;
 
-        public Args(String spType) {
+        public Criteria(String spType) {
             this.spType = spType;
         }
     }

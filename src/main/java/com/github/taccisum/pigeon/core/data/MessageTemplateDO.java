@@ -13,9 +13,13 @@ import lombok.Data;
 public class MessageTemplateDO {
     private Long id;
     /**
+     * 模板类型
+     */
+    private String type;
+    /**
      * 模板所关联的第三方服务商
      */
-    private ServiceProvider.Type spType;
+    private String spType;
     /**
      * 模板所关联的三方服务商账号 id
      */

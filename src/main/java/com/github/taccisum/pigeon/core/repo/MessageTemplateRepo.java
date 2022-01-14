@@ -25,7 +25,7 @@ public class MessageTemplateRepo {
         if (data == null) {
             return Optional.empty();
         }
-        return Optional.of(factory.createMessageTemplate(data.getId()));
+        return Optional.of(factory.createMessageTemplate(data.getId(), data.getType(), data.getSpType()));
     }
 
     public MessageTemplate getOrThrow(long id) throws MessageTemplateNotFoundException {

@@ -7,8 +7,8 @@ import com.github.taccisum.pigeon.core.data.MessageTemplateDO;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
 import com.github.taccisum.pigeon.core.utils.JsonUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 /**
@@ -18,11 +18,11 @@ import java.util.List;
  * @since 0.1
  */
 public abstract class MessageTemplate extends Entity.Base<Long> {
-    @Autowired
+    @Resource
     private MessageTemplateDAO dao;
-    @Autowired
+    @Resource
     private MessageRepo messageRepo;
-    @Autowired
+    @Resource
     private ServiceProviderRepo serviceProviderRepo;
 
     public MessageTemplate(Long id) {
@@ -40,7 +40,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param target 消息目标
      * @param params 模板参数
      */
-    public Message initMessage(String sender, String target, List<String> params) {
+    public Message initMessage(String sender, String target, Object params) {
         MessageTemplateDO data = this.data();
         MessageDO o = new MessageDO();
         o.setType(this.getMessageType());
@@ -56,6 +56,11 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         return messageRepo.create(o);
     }
 
+    /**
+     * 获取服务商
+     *
+     * @return 服务商实体
+     */
     protected ServiceProvider getServiceProvider() {
         return this.serviceProviderRepo.get(this.data().getSpType());
     }
@@ -63,5 +68,5 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     /**
      * 获取模板关联的消息类型
      */
-    protected abstract Message.Type getMessageType();
+    protected abstract String getMessageType();
 }

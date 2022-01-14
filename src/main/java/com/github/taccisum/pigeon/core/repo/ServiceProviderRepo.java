@@ -13,12 +13,12 @@ import java.util.Map;
  */
 @Component
 public class ServiceProviderRepo {
-    private static Map<ServiceProvider.Type, ServiceProvider> spMap = new HashMap<>();
+    private static Map<String, ServiceProvider> spMap = new HashMap<>();
 
     @Autowired
     private Factory factory;
 
-    public ServiceProvider get(ServiceProvider.Type id) {
+    public ServiceProvider get(String id) {
         ServiceProvider sp = spMap.get(id);
         if (sp == null) {
             sp = factory.createServiceProvider(id);
@@ -26,7 +26,7 @@ public class ServiceProviderRepo {
         }
 
         if (sp == null) {
-            throw new IllegalArgumentException(id.name());
+            throw new IllegalArgumentException(id);
         }
         return sp;
     }

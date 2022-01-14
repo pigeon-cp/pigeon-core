@@ -20,21 +20,22 @@ import java.io.Serializable;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
  */
-public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, O> extends Ordered, ExtensionPoint {
+public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C> extends Ordered, ExtensionPoint {
     /**
      * 创建实体
      *
      * @param id 实体 id
+     * @param o  参数
      */
-    E create(ID id);
+    E create(ID id, C criteria);
 
     /**
      * 匹配条件
      *
-     * @param id 实体 id
-     * @param o  参数
+     * @param id       实体 id
+     * @param criteria 参数
      */
-    boolean match(ID id, O o);
+    boolean match(ID id, C criteria);
 
     @Override
     default int getOrder() {

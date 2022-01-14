@@ -24,11 +24,11 @@ public class MessageDO {
     /**
      * 消息类型
      */
-    private Message.Type type;
+    private String type;
     /**
      * 服务商类型
      */
-    private ServiceProvider.Type spType;
+    private String spType;
     /**
      * 服务商账号 id
      */
