@@ -8,7 +8,7 @@ import lombok.Data;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 2022/1/12
  */
-public interface MessageFactory extends EntityFactory<Long, Message, MessageFactory.Args> {
+public interface MessageFactory extends EntityFactory<Long, Message, MessageFactory.Args>  {
     @Data
     public static class Args {
         private String type;

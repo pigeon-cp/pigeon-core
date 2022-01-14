@@ -8,7 +8,7 @@ import com.github.taccisum.pigeon.core.repo.factory.MessageFactory;
 import com.github.taccisum.pigeon.core.repo.factory.MessageTemplateFactory;
 import com.github.taccisum.pigeon.core.repo.factory.ServiceProviderFactory;
 import com.github.taccisum.pigeon.core.repo.factory.ThirdAccountFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.pf4j.PluginManager;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -20,16 +20,14 @@ import java.util.List;
  */
 @Component
 public class Factory implements com.github.taccisum.domain.core.Factory {
-    @Autowired
-    private List<MessageFactory> messageFactories;
-    @Autowired
-    private List<MessageTemplateFactory> messageTemplateFactories;
-    @Autowired
-    private List<ServiceProviderFactory> serviceProviderFactories;
-    @Autowired
-    private List<ThirdAccountFactory> thirdAccountFactories;
+    private PluginManager pluginManager;
+
+    public Factory(PluginManager pluginManager) {
+        this.pluginManager = pluginManager;
+    }
 
     public MessageTemplate createMessageTemplate(long id) {
+        List<MessageTemplateFactory> messageTemplateFactories = pluginManager.getExtensions(MessageTemplateFactory.class);
         messageTemplateFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (MessageTemplateFactory factory : messageTemplateFactories) {
             if (factory.match(id, new MessageTemplateFactory.Args())) {
@@ -45,6 +43,7 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     }
 
     public Message createMessage(long id, String type, String spType) {
+        List<MessageFactory> messageFactories = pluginManager.getExtensions(MessageFactory.class);
         messageFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (MessageFactory factory : messageFactories) {
             if (factory.match(id, new MessageFactory.Args(type, spType))) {
@@ -60,6 +59,7 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     }
 
     public ServiceProvider createServiceProvider(String id) {
+        List<ServiceProviderFactory> serviceProviderFactories = pluginManager.getExtensions(ServiceProviderFactory.class);
         serviceProviderFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (ServiceProviderFactory factory : serviceProviderFactories) {
             if (factory.match(id, new ServiceProviderFactory.Args(id))) {
@@ -75,6 +75,7 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     }
 
     public ThirdAccount createThirdAccount(long id, String spType) {
+        List<ThirdAccountFactory> thirdAccountFactories = pluginManager.getExtensions(ThirdAccountFactory.class);
         thirdAccountFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (ThirdAccountFactory factory : thirdAccountFactories) {
             if (factory.match(id, new ThirdAccountFactory.Args(spType))) {
