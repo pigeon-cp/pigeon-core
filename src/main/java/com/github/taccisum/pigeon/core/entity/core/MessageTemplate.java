@@ -9,7 +9,6 @@ import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
 import com.github.taccisum.pigeon.core.utils.JsonUtils;
 
 import javax.annotation.Resource;
-import java.util.List;
 
 /**
  * 消息模板，可以是短信模板、邮件模板等等
@@ -21,7 +20,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     @Resource
     private MessageTemplateDAO dao;
     @Resource
-    private MessageRepo messageRepo;
+    protected MessageRepo messageRepo;
     @Resource
     private ServiceProviderRepo serviceProviderRepo;
 
@@ -41,13 +40,25 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param params 模板参数
      */
     public Message initMessage(String sender, String target, Object params) {
+        return initMessage(sender, new User.Dummy(target), params);
+    }
+
+    /**
+     * 使用当前模板创建出一条新的待发送消息实例
+     *
+     * @param sender 发送人地址
+     * @param user   消息目标用户
+     * @param params 模板参数
+     */
+    public Message initMessage(String sender, User user, Object params) {
         MessageTemplateDO data = this.data();
         MessageDO o = new MessageDO();
         o.setType(this.getMessageType());
         o.setSpType(data.getSpType());
         o.setSpAccountId(data.getSpAccountId());
         o.setSender(sender);
-        o.setTarget(target);
+        o.setTarget(user.getAccountFor(this));
+        o.setTargetUserId(user.getId());
         o.setTemplateId(this.id());
         o.setParams(JsonUtils.stringify(params));
         o.setTitle(data.getTitleSnapshot());

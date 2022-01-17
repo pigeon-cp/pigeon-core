@@ -2,7 +2,6 @@ package com.github.taccisum.pigeon.core.data;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.github.taccisum.pigeon.core.entity.core.Message;
-import com.github.taccisum.pigeon.core.entity.core.ServiceProvider;
 import lombok.Data;
 
 /**
@@ -21,6 +20,10 @@ public class MessageDO {
      * 推送目标
      */
     private String target;
+    /**
+     * 推送目标关联的用户 id（可空）
+     */
+    private String targetUserId;
     /**
      * 消息类型
      */

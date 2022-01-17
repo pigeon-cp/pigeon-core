@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * @author taccisum - liaojinfeng6938@dingtalk.com
- * @since 2022/1/12
+ * @since 0.1
  */
 public interface MessageFactory extends EntityFactory<Long, Message, MessageFactory.Criteria> {
     @Data

@@ -1,16 +1,13 @@
 package com.github.taccisum.pigeon.core.repo;
 
-import com.github.taccisum.pigeon.core.entity.core.Message;
-import com.github.taccisum.pigeon.core.entity.core.MessageTemplate;
-import com.github.taccisum.pigeon.core.entity.core.ServiceProvider;
-import com.github.taccisum.pigeon.core.entity.core.ThirdAccount;
-import com.github.taccisum.pigeon.core.repo.factory.MessageFactory;
-import com.github.taccisum.pigeon.core.repo.factory.MessageTemplateFactory;
-import com.github.taccisum.pigeon.core.repo.factory.ServiceProviderFactory;
-import com.github.taccisum.pigeon.core.repo.factory.ThirdAccountFactory;
+import com.github.taccisum.domain.core.Entity;
+import com.github.taccisum.pigeon.core.entity.core.*;
+import com.github.taccisum.pigeon.core.repo.factory.*;
 import org.pf4j.PluginManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 
@@ -20,8 +17,9 @@ import java.util.List;
  */
 @Component
 public class Factory implements com.github.taccisum.domain.core.Factory {
-    private PluginManager pluginManager;
+    private final PluginManager pluginManager;
 
+    @Autowired
     public Factory(PluginManager pluginManager) {
         this.pluginManager = pluginManager;
     }
@@ -81,5 +79,30 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
             }
         }
         throw new UnsupportedOperationException("not any third account factory matched.");
+    }
+
+    public User createUser(String id) {
+        return this.create(id, new UserFactory.Criteria(), UserFactory.class);
+    }
+
+    /**
+     * 创建指定实体实例
+     *
+     * @param id       实体 id
+     * @param criteria 匹配条件
+     * @param type     实体工厂类型
+     */
+    <ID extends Serializable, E extends Entity<ID>, C, F extends EntityFactory<ID, E, C>>
+    E create(ID id, C criteria, Class<F> type) {
+        List<F> factories = pluginManager.getExtensions(type);
+        // TODO:: should cache ordered result for perf optimization.
+        factories.sort(Comparator.comparingInt(EntityFactory::getOrder));
+        for (F factory : factories) {
+            if (factory.match(id, criteria)) {
+                return factory.create(id, criteria);
+            }
+        }
+
+        throw new UnsupportedOperationException(String.format("Not any factory matched(for id %s, criteria: %s. expected factory type: %s).", id, criteria, type.getSimpleName()));
     }
 }
