@@ -8,6 +8,7 @@
     <artifactId>pigeon-core</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
+    <description>Defines core domain model and extension points of pigeon service.</description>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
