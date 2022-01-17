@@ -12,7 +12,7 @@ import java.io.Serializable;
  * <pre>
  * 扩展点：实体工厂
  *
- * 实现此扩展点以扩展实体创建过程，你可以通过 {@link #create(Serializable)} 方法创建属于你插件自己的实体实现，并在其中实现特殊逻辑，从而达到扩展领域模型的能力的效果。
+ * 实现此扩展点以扩展实体创建过程，你可以通过 {@link #create} 方法创建属于你插件自己的实体实现，并在其中实现特殊逻辑，从而达到扩展领域模型的能力的效果。
  *
  * 通过实体工厂创建出来的实体可以通过 {@link Autowired} 或 {@link Resource} 注解来注入主程序中定义的 bean，使用这些 bean 提供的能力可以帮助你更好地完成插件功能
  * </pre>
@@ -24,8 +24,8 @@ public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C>
     /**
      * 创建实体
      *
-     * @param id 实体 id
-     * @param o  参数
+     * @param id       实体 id
+     * @param criteria 参数
      */
     E create(ID id, C criteria);
 
