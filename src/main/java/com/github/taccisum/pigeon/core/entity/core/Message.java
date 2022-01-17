@@ -51,9 +51,9 @@ public abstract class Message extends Entity.Base<Long> {
             this.doDelivery();
             success = true;
         } catch (DomainException e) {
-            log.warn(String.format("消息 %d 发送失败，阿里云服务端返回异常", this.id()), e);
+            log.warn(String.format("消息 %d 发送失败", this.id()), e);
         } catch (Exception e) {
-            log.error(String.format("消息 %d 发送失败", this.id()), e);
+            log.error(String.format("消息 %d 发送时发生错误", this.id()), e);
         }
         this.updateStatus(success ? Status.DELIVERED : Status.FAIL);
         this.publish(new DeliverEvent(success));
