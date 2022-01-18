@@ -25,32 +25,19 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     }
 
     public MessageTemplate createMessageTemplate(long id, String type, String spType) {
-        List<MessageTemplateFactory> messageTemplateFactories = pluginManager.getExtensions(MessageTemplateFactory.class);
-        messageTemplateFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
-        for (MessageTemplateFactory factory : messageTemplateFactories) {
-            MessageTemplateFactory.Criteria criteria = new MessageTemplateFactory.Criteria(type, spType);
-            if (factory.match(id, criteria)) {
-                return factory.create(id, criteria);
-            }
-        }
-        throw new UnsupportedOperationException("not any message template factory matched.");
+        return this.create(
+                id,
+                new MessageTemplateFactory.Criteria(type, spType),
+                MessageTemplateFactory.class
+        );
     }
 
     public Message createMessage(long id, String type, String spType) {
-        List<MessageFactory> messageFactories = pluginManager.getExtensions(MessageFactory.class);
-        messageFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
-        for (MessageFactory factory : messageFactories) {
-            MessageFactory.Criteria criteria = new MessageFactory.Criteria(type, spType);
-            if (factory.match(id, criteria)) {
-                return factory.create(id, criteria);
-            }
-        }
-        throw new UnsupportedOperationException("not any message factory matched.");
-    }
-
-    @Deprecated
-    public ServiceProvider createServiceProvider(ServiceProvider.Type id) {
-        return createServiceProvider(id.name());
+        return this.create(
+                id,
+                new MessageFactory.Criteria(type, spType),
+                MessageFactory.class
+        );
     }
 
     public ServiceProvider createServiceProvider(String id) {
@@ -64,21 +51,12 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         throw new UnsupportedOperationException("not any service provide factory matched.");
     }
 
-    @Deprecated
-    public ThirdAccount createThirdAccount(long id, ServiceProvider.Type spType) {
-        return createThirdAccount(id, spType.name());
-    }
-
-    public ThirdAccount createThirdAccount(long id, String spType) {
-        List<ThirdAccountFactory> thirdAccountFactories = pluginManager.getExtensions(ThirdAccountFactory.class);
-        thirdAccountFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
-        for (ThirdAccountFactory factory : thirdAccountFactories) {
-            ThirdAccountFactory.Criteria criteria = new ThirdAccountFactory.Criteria(spType);
-            if (factory.match(id, criteria)) {
-                return factory.create(id, criteria);
-            }
-        }
-        throw new UnsupportedOperationException("not any third account factory matched.");
+    public ThirdAccount createThirdAccount(long id, String username, String spType) {
+        return this.create(
+                id,
+                new ThirdAccountFactory.Criteria(username, spType),
+                ThirdAccountFactory.class
+        );
     }
 
     public User createUser(String id) {
@@ -104,5 +82,18 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         }
 
         throw new UnsupportedOperationException(String.format("Not any factory matched(for id %s, criteria: %s. expected factory type: %s).", id, criteria, type.getSimpleName()));
+    }
+
+    public <ID extends Serializable, E extends CustomConcept<ID>, C, F extends CustomConceptFactory<ID, E, C>> E createExt(ID id, C criteria, Class<F> type) {
+        List<F> factories = pluginManager.getExtensions(type);
+        // TODO:: should cache ordered result for perf optimization.
+        factories.sort(Comparator.comparingInt(CustomConceptFactory::getOrder));
+        for (F factory : factories) {
+            if (factory.match(id, criteria)) {
+                return factory.create(id, criteria);
+            }
+        }
+
+        throw new UnsupportedOperationException(String.format("Not any extend factory matched(for id %s, criteria: %s. expected factory type: %s).", id, criteria, type.getSimpleName()));
     }
 }

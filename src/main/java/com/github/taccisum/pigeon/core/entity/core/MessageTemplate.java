@@ -61,19 +61,27 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         o.setTargetUserId(user.getId());
         o.setTemplateId(this.id());
         o.setParams(JsonUtils.stringify(params));
-        o.setTitle(data.getTitleSnapshot());
-        o.setContent(data.getContentSnapshot());
+        o.setTitle(data.getTitle());
+        o.setContent(data.getContent());
         o.setTag(data.getTag());
         return messageRepo.create(o);
     }
 
     /**
-     * 获取服务商
+     * 获取模板关联的服务商
      *
      * @return 服务商实体
      */
     protected ServiceProvider getServiceProvider() {
         return this.serviceProviderRepo.get(this.data().getSpType());
+    }
+
+    /**
+     * 获取模板关联的服务商账号
+     */
+    public ThirdAccount getSpAccount() {
+        return this.getServiceProvider()
+                .getAccountOrThrow(this.data().getSpAccountId());
     }
 
     /**

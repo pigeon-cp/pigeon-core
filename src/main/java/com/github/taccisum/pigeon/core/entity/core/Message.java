@@ -6,6 +6,7 @@ import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.pigeon.core.dao.MessageDAO;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.sp.MessageServiceProvider;
+import com.github.taccisum.pigeon.core.repo.MessageTemplateRepo;
 import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -26,6 +27,8 @@ public abstract class Message extends Entity.Base<Long> {
     protected MessageDAO dao;
     @Resource
     protected ServiceProviderRepo serviceProviderRepo;
+    @Resource
+    protected MessageTemplateRepo messageTemplateRepo;
 
     public Message(Long id) {
         super(id);
@@ -55,10 +58,27 @@ public abstract class Message extends Entity.Base<Long> {
         } catch (Exception e) {
             log.error(String.format("消息 %d 发送时发生错误", this.id()), e);
         }
-        this.updateStatus(success ? Status.DELIVERED : Status.FAIL);
-        this.publish(new DeliverEvent(success));
+
+        if (this.isRealTime()) {
+            log.debug("消息 {} 为实时消息，将直接标记发送结果", this.id());
+            this.markSent(success);
+        } else {
+            log.debug("消息 {} 为非实时消息，仅标记投递结果", this.id());
+            this.updateStatus(success ? Status.DELIVERED : Status.FAIL);
+            this.publish(new DeliverEvent(success));
+        }
+
         return success;
     }
+
+    /**
+     * <pre>
+     * 判断此消息是否实时消息，会影响到部分业务逻辑，如
+     *
+     * * 在消息分发成功后，实时消息直接变为完成状态，而非实时消息则是变为已分发状态（一般是接受到第三方待异步回调通知后再变更为完成）
+     * </pre>
+     */
+    protected abstract boolean isRealTime();
 
     /**
      * 执行消息投递的具体逻辑
@@ -69,6 +89,13 @@ public abstract class Message extends Entity.Base<Long> {
      * 获取此消息关联的服务提供商
      */
     protected abstract MessageServiceProvider getServiceProvider();
+
+    /**
+     * 获取此消息关联的模板
+     */
+    protected MessageTemplate getMessageTemplate() {
+        return messageTemplateRepo.getOrThrow(this.data().getTemplateId());
+    }
 
     /**
      * 更新消息状态
@@ -89,6 +116,7 @@ public abstract class Message extends Entity.Base<Long> {
      */
     public void markSent(boolean success) {
         this.updateStatus(success ? Status.SENT : Status.FAIL);
+        this.publish(new SentEvent(success));
     }
 
     /**

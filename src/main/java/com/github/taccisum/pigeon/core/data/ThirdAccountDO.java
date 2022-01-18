@@ -1,11 +1,9 @@
 package com.github.taccisum.pigeon.core.data;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.github.taccisum.pigeon.core.entity.core.ServiceProvider;
 import lombok.Data;
 
 /**
- * TODO:: enum 换成 string，以便插件扩展
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
  */
@@ -16,7 +14,7 @@ public class ThirdAccountDO {
     /**
      * 服务商类型
      */
-    private ServiceProvider.Type spType;
+    private String spType;
     /**
      * 用户名
      */
@@ -29,4 +27,12 @@ public class ThirdAccountDO {
      * 应用 Secret
      */
     private String appSecret;
+    /**
+     * access token
+     */
+    private String accessToken;
+    /**
+     * 备注
+     */
+    private String remark;
 }

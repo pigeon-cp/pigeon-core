@@ -11,9 +11,11 @@ import lombok.Data;
 public interface ThirdAccountFactory extends EntityFactory<Long, ThirdAccount, ThirdAccountFactory.Criteria> {
     @Data
     class Criteria {
+        String username;
         String spType;
 
-        public Criteria(String spType) {
+        public Criteria(String username, String spType) {
+            this.username = username;
             this.spType = spType;
         }
     }

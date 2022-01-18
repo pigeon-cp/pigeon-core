@@ -1,7 +1,6 @@
 package com.github.taccisum.pigeon.core.data;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.github.taccisum.pigeon.core.entity.core.ServiceProvider;
 import lombok.Data;
 
 /**
@@ -29,13 +28,13 @@ public class MessageTemplateDO {
      */
     private String thirdCode;
     /**
-     * 模板标题（快照）
+     * 模板标题
      */
-    private String titleSnapshot;
+    private String title;
     /**
-     * 模板内容（快照）
+     * 模板内容
      */
-    private String contentSnapshot;
+    private String content;
     /**
      * 发送时使用的标签
      */
