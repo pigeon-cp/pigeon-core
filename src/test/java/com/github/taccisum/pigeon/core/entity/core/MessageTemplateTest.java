@@ -63,7 +63,7 @@ class MessageTemplateTest {
         }
 
         @Override
-        protected String getMessageType() {
+        public String getMessageType() {
             return "TEST";
         }
     }
