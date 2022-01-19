@@ -17,7 +17,7 @@ public abstract class Mail extends Message {
     }
 
     @Override
-    protected MailServiceProvider getServiceProvider() {
+    public MailServiceProvider getServiceProvider() {
         ServiceProvider sp = serviceProviderRepo.get(this.data().getSpType());
         if (sp instanceof MailServiceProvider) {
             return (MailServiceProvider) sp;

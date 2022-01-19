@@ -48,21 +48,28 @@ public abstract class User extends Entity.Base<String> {
 
         if (account == null) {
             // 其次判断消息 type
-            switch (template.getMessageType()) {
-                case Message.Type.MAIL:
-                    account = this.getMailAccount();
-                    break;
-                case Message.Type.SMS:
-                    account = this.getPhoneNum();
-                    break;
-                default:
-                    break;
-            }
+            return this.getAccountFor(template.getMessageType());
         }
         if (account == null) {
             log.warn("未找到用户 {} 适用于消息模板 {} 的账号，将返回 null", this.id(), template.id());
         }
         return account;
+    }
+
+    /**
+     * 获取适用于指定消息类型的账号
+     *
+     * @param messageType 消息类型
+     */
+    public String getAccountFor(String messageType) {
+        switch (messageType) {
+            case Message.Type.MAIL:
+                return this.getMailAccount();
+            case Message.Type.SMS:
+                return this.getPhoneNum();
+            default:
+                return null;
+        }
     }
 
     public static class Dummy extends User {

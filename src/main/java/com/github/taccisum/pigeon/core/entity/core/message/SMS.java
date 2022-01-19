@@ -17,7 +17,7 @@ public abstract class SMS extends Message {
     }
 
     @Override
-    protected SMSServiceProvider getServiceProvider() {
+    public SMSServiceProvider getServiceProvider() {
         ServiceProvider sp = this.serviceProviderRepo.get(this.data().getSpType());
         if (sp instanceof SMSServiceProvider) {
             return (SMSServiceProvider) sp;

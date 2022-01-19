@@ -8,6 +8,7 @@ import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.sp.MessageServiceProvider;
 import com.github.taccisum.pigeon.core.repo.MessageTemplateRepo;
 import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
+import com.github.taccisum.pigeon.core.repo.ThirdAccountRepo;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Resource;
 
 /**
- * 代表一条具体的消息，可以是短信、推送、微信等等
+ * 业务消息基类，可以是短信、推送、微信等等（取决于具体实现）
  *
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
@@ -49,26 +50,48 @@ public abstract class Message extends Entity.Base<Long> {
      * @return 投递结果
      */
     public boolean deliver() {
+        if (this.shouldRelateTemplate()) {
+            if (this.data().getTemplateId() == null) {
+                throw new DeliverException("消息 %d 必须关联模板", this.id());
+            }
+        }
+
         boolean success = false;
+        String msg = null;
         try {
             this.doDelivery();
             success = true;
         } catch (DomainException e) {
             log.warn(String.format("消息 %d 发送失败", this.id()), e);
+            msg = e.getMessage();
         } catch (Exception e) {
             log.error(String.format("消息 %d 发送时发生错误", this.id()), e);
+            msg = e.getMessage();
         }
 
         if (this.isRealTime()) {
             log.debug("消息 {} 为实时消息，将直接标记发送结果", this.id());
+            if (msg != null) {
+                this.markSent(success, msg);
+            }
             this.markSent(success);
         } else {
             log.debug("消息 {} 为非实时消息，仅标记投递结果", this.id());
-            this.updateStatus(success ? Status.DELIVERED : Status.FAIL);
-            this.publish(new DeliverEvent(success));
+            this.markDelivered(success, msg);
         }
 
         return success;
+    }
+
+    /**
+     * <pre>
+     * 判断此消息是否必须要关联模板
+     *
+     * 有些消息（如短信）可能必需要提前在运营商备案模板方可发送，此时应返回 true，其它返回 false
+     * </pre>
+     */
+    public boolean shouldRelateTemplate() {
+        return false;
     }
 
     /**
@@ -78,7 +101,7 @@ public abstract class Message extends Entity.Base<Long> {
      * * 在消息分发成功后，实时消息直接变为完成状态，而非实时消息则是变为已分发状态（一般是接受到第三方待异步回调通知后再变更为完成）
      * </pre>
      */
-    protected abstract boolean isRealTime();
+    public abstract boolean isRealTime();
 
     /**
      * 执行消息投递的具体逻辑
@@ -88,13 +111,25 @@ public abstract class Message extends Entity.Base<Long> {
     /**
      * 获取此消息关联的服务提供商
      */
-    protected abstract MessageServiceProvider getServiceProvider();
+    public abstract MessageServiceProvider getServiceProvider();
+
+    /**
+     * 获取发送此消息所使用的服务商账号
+     */
+    public ThirdAccount getSpAccount() throws ThirdAccountRepo.NotFoundException {
+        return this.getServiceProvider()
+                .getAccountOrThrow(this.data().getSpAccountId());
+    }
 
     /**
      * 获取此消息关联的模板
      */
-    protected MessageTemplate getMessageTemplate() {
-        return messageTemplateRepo.getOrThrow(this.data().getTemplateId());
+    public MessageTemplate getMessageTemplate() throws MessageTemplateRepo.MessageTemplateNotFoundException {
+        if (this.shouldRelateTemplate()) {
+            return messageTemplateRepo.getOrThrow(this.data().getTemplateId());
+        }
+        return messageTemplateRepo.get(this.data().getTemplateId())
+                .orElse(null);
     }
 
     /**
@@ -103,9 +138,20 @@ public abstract class Message extends Entity.Base<Long> {
      * @param status 目标状态
      */
     protected void updateStatus(Status status) {
+        this.updateStatus(status, "-");
+    }
+
+    /**
+     * 更新消息状态及状态信息
+     *
+     * @param status 目标状态
+     * @param msg    状态信息
+     */
+    protected void updateStatus(Status status, String msg) {
         MessageDO o = new MessageDO();
         o.setId(this.id());
         o.setStatus(status);
+        o.setStatusRemark(msg);
         this.dao.updateById(o);
     }
 
@@ -115,8 +161,30 @@ public abstract class Message extends Entity.Base<Long> {
      * @param success 是否成功
      */
     public void markSent(boolean success) {
-        this.updateStatus(success ? Status.SENT : Status.FAIL);
+        this.markSent(success, success ? "发送成功" : "发送失败，原因未知");
+    }
+
+    /**
+     * 标记消息为已发送
+     *
+     * @param success 是否成功
+     * @param msg     状态信息
+     */
+    public void markSent(boolean success, String msg) {
+        this.updateStatus(success ? Status.SENT : Status.FAIL, msg);
         this.publish(new SentEvent(success));
+    }
+
+
+    /**
+     * 标记消息为已投递
+     *
+     * @param success 是否成功
+     * @param msg     状态信息
+     */
+    public void markDelivered(boolean success, String msg) {
+        this.updateStatus(success ? Status.DELIVERED : Status.FAIL);
+        this.publish(new DeliverEvent(success));
     }
 
     /**
@@ -189,5 +257,18 @@ public abstract class Message extends Entity.Base<Long> {
          * 发送失败
          */
         FAIL,
+    }
+
+    /**
+     * 消息分发异常
+     */
+    public static class DeliverException extends DomainException {
+        public DeliverException(String message) {
+            super(message);
+        }
+
+        public DeliverException(String message, Object... args) {
+            super(message, args);
+        }
     }
 }

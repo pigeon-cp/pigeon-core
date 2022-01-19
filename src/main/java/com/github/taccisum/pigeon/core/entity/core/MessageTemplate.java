@@ -87,5 +87,5 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     /**
      * 获取模板关联的消息类型
      */
-    protected abstract String getMessageType();
+    public abstract String getMessageType();
 }

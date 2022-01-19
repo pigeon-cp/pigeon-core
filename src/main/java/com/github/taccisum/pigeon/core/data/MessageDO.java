@@ -60,4 +60,8 @@ public class MessageDO {
      * 消息状态
      */
     private Message.Status status;
+    /**
+     * 状态信息
+     */
+    private String statusRemark;
 }

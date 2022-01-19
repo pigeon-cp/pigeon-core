@@ -15,7 +15,7 @@ public abstract class SMSTemplate extends MessageTemplate {
     }
 
     @Override
-    protected String getMessageType() {
+    public String getMessageType() {
         return Message.Type.SMS;
     }
 }
