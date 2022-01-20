@@ -63,6 +63,14 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         return this.create(id, new UserFactory.Criteria(), UserFactory.class);
     }
 
+    public MassTactic createMassTactic(Long id, String type) {
+        return this.create(id, new MassTacticFactory.Criteria(type), MassTacticFactory.class);
+    }
+
+    public MessageMass createMessageMass(Long id) {
+        return new MessageMass(id);
+    }
+
     /**
      * 创建指定实体实例
      *

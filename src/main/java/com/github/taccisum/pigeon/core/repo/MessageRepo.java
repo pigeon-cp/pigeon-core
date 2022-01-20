@@ -9,7 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author taccisum - liaojinfeng6938@dingtalk.com
@@ -18,7 +20,7 @@ import java.util.Objects;
 @Component
 public class MessageRepo {
     @Autowired
-    private MessageDAO mapper;
+    private MessageDAO dao;
     @Autowired
     private Factory factory;
     @Resource
@@ -30,7 +32,7 @@ public class MessageRepo {
     public Message create(MessageDO data) throws CreateMessageException {
         data.setStatus(Message.Status.NOT_SEND);
 
-        mapper.insert(data);
+        dao.insert(data);
         Message message = factory.createMessage(data.getId(), data.getType(), data.getSpType());
 
         // 校验模板
@@ -51,6 +53,13 @@ public class MessageRepo {
         }
 
         return message;
+    }
+
+    public List<Message> listByMassId(Long massId, long limit) {
+        return this.dao.selectListByMassId(massId, limit)
+                .stream()
+                .map(data -> factory.createMessage(data.getId(), data.getType(), data.getSpType()))
+                .collect(Collectors.toList());
     }
 
     /**

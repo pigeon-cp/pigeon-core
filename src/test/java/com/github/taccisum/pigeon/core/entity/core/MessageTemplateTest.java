@@ -5,12 +5,17 @@ import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.data.MessageTemplateDO;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.utils.JsonUtils;
+import com.github.taccisum.pigeon.core.valueobj.TargetSource;
 import com.google.common.collect.Lists;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -57,6 +62,26 @@ class MessageTemplateTest {
         }
     }
 
+    @Nested
+    @DisplayName("#resolve(...)")
+    class ResolveTargetResourceTest {
+        @Test
+        @DisplayName("index")
+        void index() {
+            List<MessageTarget> targets = template.resolve(new TargetSource.Text("mail\n123\n456"));
+            assertThat(targets.size()).isEqualTo(2);
+            assertThat(targets.get(0).getAccountFor(null)).isEqualTo("123");
+            assertThat(targets.get(1).getAccountFor(null)).isEqualTo("456");
+        }
+
+        @Test
+        @DisplayName("转换失败时忽略掉该行")
+        void ignoreIfFailToMap() {
+            List<MessageTarget> targets = template.resolve(new TargetSource.Text("mail\n123\n  \n456"));
+            assertThat(targets.size()).isEqualTo(2);
+        }
+    }
+
     static class FooTemplate extends MessageTemplate {
         public FooTemplate(Long id) {
             super(id);
@@ -65,6 +90,15 @@ class MessageTemplateTest {
         @Override
         public String getMessageType() {
             return "TEST";
+        }
+
+        @Override
+        protected MessageTarget map(CSVRecord row) {
+            String account = row.get(0);
+            if (StringUtils.isBlank(account)) {
+                return null;
+            }
+            return new MessageTarget.Default(account);
         }
     }
 }

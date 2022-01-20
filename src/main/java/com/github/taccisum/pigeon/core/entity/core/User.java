@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 2022/1/17
  */
-public abstract class User extends Entity.Base<String> {
+public abstract class User extends Entity.Base<String> implements MessageTarget {
     protected Logger log = LoggerFactory.getLogger(this.getClass());
 
     public User(String id) {

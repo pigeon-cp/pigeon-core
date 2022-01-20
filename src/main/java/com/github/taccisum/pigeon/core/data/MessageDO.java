@@ -64,4 +64,8 @@ public class MessageDO {
      * 状态信息
      */
     private String statusRemark;
+    /**
+     * 所属消息集 id
+     */
+    private Long massId;
 }

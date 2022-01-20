@@ -183,7 +183,7 @@ public abstract class Message extends Entity.Base<Long> {
      * @param msg     状态信息
      */
     public void markDelivered(boolean success, String msg) {
-        this.updateStatus(success ? Status.DELIVERED : Status.FAIL);
+        this.updateStatus(success ? Status.DELIVERED : Status.FAIL, msg);
         this.publish(new DeliverEvent(success));
     }
 
