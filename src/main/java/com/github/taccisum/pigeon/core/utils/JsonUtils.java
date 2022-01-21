@@ -17,6 +17,15 @@ public abstract class JsonUtils {
         JsonUtils.objectMapper = objectMapper;
     }
 
+    public static <T> T parse(String json, Class<T> clazz) {
+        try {
+            return objectMapper.readValue(json, clazz);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     /**
      * 将对象转换成 json 字符串
      */

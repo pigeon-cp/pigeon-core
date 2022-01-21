@@ -9,6 +9,7 @@ import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
 import com.github.taccisum.pigeon.core.valueobj.Source;
 import com.google.common.collect.Lists;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -102,6 +103,11 @@ class MessageTemplateTest {
             return new MessageInfo()
                     .setAccount(account)
                     ;
+        }
+
+        @Override
+        protected String getAccountHeaderName() {
+            throw new NotImplementedException();
         }
     }
 }

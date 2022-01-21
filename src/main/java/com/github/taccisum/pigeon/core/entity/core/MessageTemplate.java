@@ -7,12 +7,15 @@ import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.data.MessageTemplateDO;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
+import com.github.taccisum.pigeon.core.repo.UserRepo;
+import com.github.taccisum.pigeon.core.utils.CSVUtils;
 import com.github.taccisum.pigeon.core.utils.JsonUtils;
 import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
 import com.github.taccisum.pigeon.core.valueobj.Source;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +36,8 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     protected Logger log = LoggerFactory.getLogger(this.getClass());
     @Resource
     private MessageTemplateDAO dao;
+    @Resource
+    protected UserRepo userRepo;
     @Resource
     protected MessageRepo messageRepo;
     @Resource
@@ -141,7 +146,28 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param row 行数据
      * @param def 缺省值
      */
-    protected abstract MessageInfo map(CSVRecord row, MessageInfo def);
+    protected MessageInfo map(CSVRecord row, MessageInfo def) {
+        MessageInfo info = new MessageInfo();
+
+        String mail = CSVUtils.getOrDefault(row, this.getAccountHeaderName(), 0, null);
+
+        if (StringUtils.isEmpty(mail)) {
+            return null;
+        }
+        if (mail.startsWith("u\\_")) {
+            info.setAccount(this.userRepo.get(mail.substring(2, mail.length()))
+                    .orElse(null));
+        } else {
+            info.setAccount(mail);
+        }
+
+        info.setSender(CSVUtils.getOrDefault(row, "sender", def.getSender()));
+        info.setParams(CSVUtils.getOrDefault(row, "params", def.getParams()));
+
+        return info;
+    }
+
+    protected abstract String getAccountHeaderName();
 
     /**
      * 解析目标源异常

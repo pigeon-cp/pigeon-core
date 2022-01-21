@@ -18,4 +18,9 @@ public abstract class SMSTemplate extends MessageTemplate {
     public String getMessageType() {
         return Message.Type.SMS;
     }
+
+    @Override
+    protected String getAccountHeaderName() {
+        return "phone";
+    }
 }
