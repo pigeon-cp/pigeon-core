@@ -35,11 +35,11 @@ class MessageTest {
         @DisplayName("index")
         void index() throws Exception {
             doNothing().when(message).doDelivery();
-            doNothing().when(message).updateStatus(any());
+            doNothing().when(message).updateStatus(any(), any());
             doNothing().when(message).publish(any());
             assertThat(message.deliver()).isTrue();
             verify(message, times(1)).doDelivery();
-            verify(message, times(1)).updateStatus(Message.Status.DELIVERED);
+            verify(message, times(1)).updateStatus(eq(Message.Status.DELIVERED), any());
             verify(message, times(1)).publish(any());
         }
 
@@ -47,11 +47,11 @@ class MessageTest {
         @DisplayName("doDelivery() 发生任何异常均会被处理")
         void doDeliveryFail() throws Exception {
             doThrow(new RuntimeException("test")).when(message).doDelivery();
-            doNothing().when(message).updateStatus(any());
+            doNothing().when(message).updateStatus(any(), any());
             doNothing().when(message).publish(any());
             assertThat(message.deliver()).isFalse();
             verify(message, times(1)).doDelivery();
-            verify(message, times(1)).updateStatus(Message.Status.FAIL);
+            verify(message, times(1)).updateStatus(eq(Message.Status.FAIL), any());
             verify(message, times(1)).publish(any());
         }
 

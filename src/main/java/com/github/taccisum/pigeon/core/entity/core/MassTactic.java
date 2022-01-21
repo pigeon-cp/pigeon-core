@@ -302,4 +302,10 @@ public abstract class MassTactic extends Entity.Base<Long> {
             super(message, args);
         }
     }
+
+    public static class Default extends MassTactic {
+        public Default(Long id) {
+            super(id);
+        }
+    }
 }
