@@ -58,8 +58,9 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行此策略
      */
     public MessageMass exec() throws ExecException {
-        if (this.data().getMustTest()) {
-            if (Boolean.TRUE.equals(this.data().getHasTest())) {
+        MassTacticDO data = this.data();
+        if (Boolean.TRUE.equals(data.getMustTest())) {
+            if (!Boolean.TRUE.equals(data.getHasTest())) {
                 throw new ExecException("群发策略 %d 必须先通过测试才能执行", this.id());
             }
         }
@@ -99,15 +100,19 @@ public abstract class MassTactic extends Entity.Base<Long> {
         this.updateStatus(Status.ARCHIVED);
     }
 
-    private boolean isExecuting() {
+    boolean isExecuting() {
         return this.data().getStatus() == Status.EXECUTING;
     }
 
     /**
      * 获取已经准备好的消息集合
      */
-    private Optional<MessageMass> getPreparedMass() {
-        return messageMassRepo.get(this.data().getPreparedMassId());
+    Optional<MessageMass> getPreparedMass() {
+        Long massId = this.data().getPreparedMassId();
+        if (massId == null || massId == 0) {
+            return Optional.empty();
+        }
+        return messageMassRepo.get(massId);
     }
 
     /**
@@ -116,7 +121,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     protected MessageMass doPrepare() {
         MassTacticDO data = this.data();
         MessageMass mass = this.newMass();
-        MessageTemplate template = messageTemplateRepo.getOrThrow(data.getTemplateId());
+        MessageTemplate template = this.getMessageTemplate();
         List<Message> messages = new ArrayList<>();
         // TODO:: 针对海量目标群进行性能优化
         for (MessageInfo info : this.listMessageInfos()) {
@@ -137,7 +142,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
         return mass;
     }
 
-    private void markPrepared(MessageMass mass) {
+    void markPrepared(MessageMass mass) {
         MassTacticDO o = dao.newEmptyDataObject();
         o.setId(this.id());
         o.setPreparedMassId(mass.getId());
@@ -155,7 +160,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
         }
     }
 
-    private MessageMass newMass() {
+    MessageMass newMass() {
         return newMass(false);
     }
 
@@ -167,20 +172,19 @@ public abstract class MassTactic extends Entity.Base<Long> {
         return messageMassRepo.create(o);
     }
 
-    private List<MessageInfo> listMessageInfos() {
-        Source source = this.getTargetSource();
-        MessageTemplate template = this.getMessageTemplate();
+    List<MessageInfo> listMessageInfos() {
         MessageInfo def = new MessageInfo();
         def.setSender(this.data().getDefaultSender());
         def.setParams(this.data().getDefaultParams());
-        return template.resolve(source, def);
+        return this.getMessageTemplate()
+                .resolve(this.getSource(), def);
     }
 
-    private MessageTemplate getMessageTemplate() {
+    MessageTemplate getMessageTemplate() {
         return this.messageTemplateRepo.getOrThrow(this.data().getTemplateId());
     }
 
-    private Source getTargetSource() {
+    private Source getSource() {
         MassTacticDO data = this.data();
 
         switch (data.getSourceType()) {
@@ -198,7 +202,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 判断策略是否已完成准备工作
      */
-    private boolean hasPrepared() {
+    boolean hasPrepared() {
         return Lists.newArrayList(Status.PREPARED, Status.EXECUTING)
                 .contains(this.data().getStatus());
     }
