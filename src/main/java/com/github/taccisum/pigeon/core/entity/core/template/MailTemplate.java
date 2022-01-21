@@ -1,14 +1,14 @@
 package com.github.taccisum.pigeon.core.entity.core.template;
 
 import com.github.taccisum.pigeon.core.entity.core.Message;
-import com.github.taccisum.pigeon.core.entity.core.MessageTarget;
 import com.github.taccisum.pigeon.core.entity.core.MessageTemplate;
 import com.github.taccisum.pigeon.core.repo.UserRepo;
+import com.github.taccisum.pigeon.core.utils.CSVUtils;
+import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Resource;
-import java.util.Optional;
 
 /**
  * 邮件模板
@@ -30,19 +30,24 @@ public abstract class MailTemplate extends MessageTemplate {
     }
 
     @Override
-    protected MessageTarget map(CSVRecord row) {
-        String mail = Optional.ofNullable(row.get("mail"))
-                .orElse(row.get(0));
+    protected MessageInfo map(CSVRecord row, MessageInfo def) {
+        MessageInfo info = new MessageInfo();
+
+        String mail = CSVUtils.getOrDefault(row, "mail", 0, null);
 
         if (StringUtils.isEmpty(mail)) {
             return null;
         }
-
         if (mail.startsWith("u\\_")) {
-            return userRepo.get(mail.substring(2, mail.length()))
-                    .orElse(null);
+            info.setAccount(userRepo.get(mail.substring(2, mail.length()))
+                    .orElse(null));
+        } else {
+            info.setAccount(mail);
         }
 
-        return new MessageTarget.Default(mail);
+        info.setSender(CSVUtils.getOrDefault(row, "sender", def.getSender()));
+        info.setParams(CSVUtils.getOrDefault(row, "params", def.getParams()));
+
+        return info;
     }
 }

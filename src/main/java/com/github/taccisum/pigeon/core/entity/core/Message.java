@@ -22,6 +22,7 @@ import javax.annotation.Resource;
  * @since 0.1
  */
 public abstract class Message extends Entity.Base<Long> {
+    public static final String DEFAULT_SENDER = "pigeon";
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Resource

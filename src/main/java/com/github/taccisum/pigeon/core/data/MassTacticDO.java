@@ -34,13 +34,21 @@ public abstract class MassTacticDO implements DataObject<Long> {
      */
     private Long templateId;
     /**
-     * 消息目标源
+     * 缺省的消息发送人
      */
-    private String targetSource;
+    private String defaultSender;
     /**
-     * 目标源类型
+     * 缺省的模板参数
      */
-    private MassTactic.SourceType targetSourceType;
+    private String defaultParams;
+    /**
+     * 数据源（应包含发送目标，可包括模板参数等其它配置，取决于具体模板实现）
+     */
+    private String source;
+    /**
+     * 数据源类型
+     */
+    private MassTactic.SourceType sourceType;
     /**
      * 准备好的数据集 id
      */

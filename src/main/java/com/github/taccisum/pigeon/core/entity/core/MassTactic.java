@@ -8,10 +8,14 @@ import com.github.taccisum.pigeon.core.dao.MessageMassDAO;
 import com.github.taccisum.pigeon.core.data.MassTacticDO;
 import com.github.taccisum.pigeon.core.data.MessageMassDO;
 import com.github.taccisum.pigeon.core.repo.MessageMassRepo;
+import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.repo.MessageTemplateRepo;
-import com.github.taccisum.pigeon.core.valueobj.TargetSource;
+import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
+import com.github.taccisum.pigeon.core.valueobj.Source;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang.NotImplementedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -25,6 +29,7 @@ import java.util.Optional;
  * @since 0.1
  */
 public abstract class MassTactic extends Entity.Base<Long> {
+    protected final Logger log = LoggerFactory.getLogger(this.getClass());
     @Resource
     private MassTacticDAO dao;
     @Resource
@@ -109,19 +114,22 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行准备工作
      */
     protected MessageMass doPrepare() {
+        MassTacticDO data = this.data();
         MessageMass mass = this.newMass();
-        MessageTemplate template = messageTemplateRepo.getOrThrow(this.data().getTemplateId());
+        MessageTemplate template = messageTemplateRepo.getOrThrow(data.getTemplateId());
         List<Message> messages = new ArrayList<>();
         // TODO:: 针对海量目标群进行性能优化
-        for (MessageTarget target : this.listTargets()) {
+        for (MessageInfo info : this.listMessageInfos()) {
             // TODO:: magic num
-            Message message;
-            if (target instanceof User) {
-                message = template.initMessage("pigeon", (User) target, "params");
-            } else {
-                message = template.initMessage("pigeon", target.getAccountFor(template), "params");
+            try {
+                if (info.getAccount() instanceof User) {
+                    messages.add(template.initMessage(info.getSender(), (User) info.getAccount(), info.getParams()));
+                } else {
+                    messages.add(template.initMessage(info.getSender(), (String) info.getAccount(), info.getParams()));
+                }
+            } catch (MessageRepo.CreateMessageException e) {
+                log.warn("发送至 {} 的消息创建失败：{}", info, e.getMessage());
             }
-            messages.add(message);
         }
 
         mass.addAll(messages);
@@ -159,28 +167,31 @@ public abstract class MassTactic extends Entity.Base<Long> {
         return messageMassRepo.create(o);
     }
 
-    private List<MessageTarget> listTargets() {
-        TargetSource source = this.getTargetSource();
+    private List<MessageInfo> listMessageInfos() {
+        Source source = this.getTargetSource();
         MessageTemplate template = this.getMessageTemplate();
-        return template.resolve(source);
+        MessageInfo def = new MessageInfo();
+        def.setSender(this.data().getDefaultSender());
+        def.setParams(this.data().getDefaultParams());
+        return template.resolve(source, def);
     }
 
     private MessageTemplate getMessageTemplate() {
         return this.messageTemplateRepo.getOrThrow(this.data().getTemplateId());
     }
 
-    private TargetSource getTargetSource() {
+    private Source getTargetSource() {
         MassTacticDO data = this.data();
 
-        switch (data.getTargetSourceType()) {
+        switch (data.getSourceType()) {
             case TEXT:
-                return new TargetSource.Text(data.getTargetSource());
+                return new Source.Text(data.getSource());
             case FILE:
-                return new TargetSource.File(data.getTargetSource());
+                return new Source.File(data.getSource());
             case URL:
-                return new TargetSource.Url(data.getTargetSource());
+                return new Source.Url(data.getSource());
             default:
-                throw new UnsupportedOperationException(data.getTargetSourceType().name());
+                throw new UnsupportedOperationException(data.getSourceType().name());
         }
     }
 
@@ -245,7 +256,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
 
 
     /**
-     * targets 源类型
+     * 数据源类型
      */
     public enum SourceType {
         TEXT,

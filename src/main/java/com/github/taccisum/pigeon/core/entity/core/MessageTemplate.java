@@ -8,7 +8,8 @@ import com.github.taccisum.pigeon.core.data.MessageTemplateDO;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
 import com.github.taccisum.pigeon.core.utils.JsonUtils;
-import com.github.taccisum.pigeon.core.valueobj.TargetSource;
+import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
+import com.github.taccisum.pigeon.core.valueobj.Source;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -102,19 +103,24 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      */
     public abstract String getMessageType();
 
+    public List<MessageInfo> resolve(Source source) throws ResolveSourceException {
+        return this.resolve(source, new MessageInfo());
+    }
+
     /**
-     * 解析目标数据源为消息目标实体
+     * 解析群发数据源为消息目标实体
      *
      * @param source 目标源
+     * @param def    缺省值（充当数据源中缺失的信息默认值）
      */
-    public List<MessageTarget> resolve(TargetSource source) throws ResolveTargetSourceException {
-        List<MessageTarget> targets = new ArrayList<>();
+    public List<MessageInfo> resolve(Source source, MessageInfo def) throws ResolveSourceException {
+        List<MessageInfo> targets = new ArrayList<>();
         try {
             CSVParser csv = CSVFormat.DEFAULT.builder()
                     .setHeader().setSkipHeaderRecord(true)
                     .build().parse(new BufferedReader(new InputStreamReader(source.getInputStream())));
             for (CSVRecord row : csv) {
-                MessageTarget target = this.map(row);
+                MessageInfo target = this.map(row, def);
                 if (target != null) {
                     targets.add(target);
                 } else {
@@ -122,23 +128,26 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
                 }
             }
         } catch (IOException e) {
-            throw new ResolveTargetSourceException("解析目标源发生 I/O 异常", e);
+            throw new ResolveSourceException("解析目标源发生 I/O 异常", e);
         } catch (Exception e) {
-            throw new ResolveTargetSourceException("解析目标源发生错误", e);
+            throw new ResolveSourceException("解析目标源发生错误", e);
         }
         return targets;
     }
 
     /**
      * 解析行数据为目标实体
+     *
+     * @param row 行数据
+     * @param def 缺省值
      */
-    protected abstract MessageTarget map(CSVRecord row);
+    protected abstract MessageInfo map(CSVRecord row, MessageInfo def);
 
     /**
      * 解析目标源异常
      */
-    public static class ResolveTargetSourceException extends DomainException {
-        public ResolveTargetSourceException(String message, Throwable cause) {
+    public static class ResolveSourceException extends DomainException {
+        public ResolveSourceException(String message, Throwable cause) {
             super(message, cause);
         }
     }

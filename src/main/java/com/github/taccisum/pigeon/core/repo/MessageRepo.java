@@ -5,7 +5,7 @@ import com.github.taccisum.pigeon.core.dao.MessageDAO;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.MessageTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
  */
 @Component
 public class MessageRepo {
-    @Autowired
+    @Resource
     private MessageDAO dao;
-    @Autowired
+    @Resource
     private Factory factory;
     @Resource
     MessageTemplateRepo messageTemplateRepo;
@@ -31,6 +31,9 @@ public class MessageRepo {
      */
     public Message create(MessageDO data) throws CreateMessageException {
         data.setStatus(Message.Status.NOT_SEND);
+        if (StringUtils.isBlank(data.getSender())) {
+            data.setSender(Message.DEFAULT_SENDER);
+        }
 
         dao.insert(data);
         Message message = factory.createMessage(data.getId(), data.getType(), data.getSpType());

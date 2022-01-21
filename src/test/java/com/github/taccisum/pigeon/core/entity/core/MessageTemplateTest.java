@@ -5,7 +5,8 @@ import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.data.MessageTemplateDO;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.utils.JsonUtils;
-import com.github.taccisum.pigeon.core.valueobj.TargetSource;
+import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
+import com.github.taccisum.pigeon.core.valueobj.Source;
 import com.google.common.collect.Lists;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang.StringUtils;
@@ -68,16 +69,16 @@ class MessageTemplateTest {
         @Test
         @DisplayName("index")
         void index() {
-            List<MessageTarget> targets = template.resolve(new TargetSource.Text("mail\n123\n456"));
+            List<MessageInfo> targets = template.resolve(new Source.Text("mail\n123\n456"));
             assertThat(targets.size()).isEqualTo(2);
-            assertThat(targets.get(0).getAccountFor(null)).isEqualTo("123");
-            assertThat(targets.get(1).getAccountFor(null)).isEqualTo("456");
+            assertThat(targets.get(0).getAccount()).isEqualTo("123");
+            assertThat(targets.get(1).getAccount()).isEqualTo("456");
         }
 
         @Test
         @DisplayName("转换失败时忽略掉该行")
         void ignoreIfFailToMap() {
-            List<MessageTarget> targets = template.resolve(new TargetSource.Text("mail\n123\n  \n456"));
+            List<MessageInfo> targets = template.resolve(new Source.Text("mail\n123\n  \n456"));
             assertThat(targets.size()).isEqualTo(2);
         }
     }
@@ -93,12 +94,14 @@ class MessageTemplateTest {
         }
 
         @Override
-        protected MessageTarget map(CSVRecord row) {
+        protected MessageInfo map(CSVRecord row, MessageInfo def) {
             String account = row.get(0);
             if (StringUtils.isBlank(account)) {
                 return null;
             }
-            return new MessageTarget.Default(account);
+            return new MessageInfo()
+                    .setAccount(account)
+                    ;
         }
     }
 }

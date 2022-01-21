@@ -21,7 +21,11 @@ public class MassTacticRepo {
     private Factory factory;
 
     public MassTactic create(MassTacticDO data) {
+        if (data.getMustTest() == null) {
+            data.setMustTest(true);
+        }
         data.setStatus(MassTactic.Status.AVAILABLE);
+        data.setExecTimes(0);
         Long id = dao.insert(data);
         return factory.createMassTactic(id, data.getType());
     }

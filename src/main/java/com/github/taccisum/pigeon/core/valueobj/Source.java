@@ -10,10 +10,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
+ * 群发策略数据源
+ *
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
  */
-public interface TargetSource {
+public interface Source {
     /**
      * 获取目标源输入流
      */
@@ -24,7 +26,7 @@ public interface TargetSource {
      */
     List<String> listAllLines();
 
-    abstract class Base implements TargetSource {
+    abstract class Base implements Source {
         @Getter
         private String source;
 
