@@ -37,7 +37,7 @@ public class MessageMass extends Entity.Base<Long> {
     @Resource
     private PluginManager pluginManager;
     @Resource
-    private MessageMassDAO dao;
+    MessageMassDAO dao;
     @Resource
     private SubMassRepo subMassRepo;
     @Resource
@@ -138,7 +138,7 @@ public class MessageMass extends Entity.Base<Long> {
      * 在本地节点完成所有消息的分发
      */
     private void deliverOnLocal() {
-        int sentCount = 0;
+        int successCount = 0;
         int failCount = 0;
         int errorCount = 0;
 
@@ -147,18 +147,30 @@ public class MessageMass extends Entity.Base<Long> {
             try {
                 boolean success = message.deliver();
                 if (success) {
-                    sentCount++;
+                    successCount++;
                 } else {
                     failCount++;
                 }
             } catch (Message.DeliverException e) {
+                log.warn("消息发送失败", e);
                 failCount++;
             } catch (Exception e) {
+                log.error("消息发送出错", e);
                 // 为了确保批量发送时具有足够的可靠性，将所有单个 message 触发的 exception catch 掉
                 errorCount++;
             }
         }
-        // TODO:: record counts
+        this.increaseCount(successCount, failCount, errorCount);
+    }
+
+    void increaseCount(int successCount, int failCount, int errorCount) {
+        MessageMassDO data = this.data();
+        MessageMassDO o = dao.newEmptyDataObject();
+        o.setId(this.id());
+        o.setSuccessCount(Optional.ofNullable(data.getSuccessCount()).orElse(0) + successCount);
+        o.setFailCount(Optional.ofNullable(data.getFailCount()).orElse(0) + failCount);
+        o.setErrorCount(Optional.ofNullable(data.getErrorCount()).orElse(0) + errorCount);
+        this.dao.updateById(o);
     }
 
     /**
