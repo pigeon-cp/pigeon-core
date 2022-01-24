@@ -41,14 +41,11 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     }
 
     public ServiceProvider createServiceProvider(String id) {
-        List<ServiceProviderFactory> serviceProviderFactories = pluginManager.getExtensions(ServiceProviderFactory.class);
-        serviceProviderFactories.sort(Comparator.comparingInt(EntityFactory::getOrder));
-        for (ServiceProviderFactory factory : serviceProviderFactories) {
-            if (factory.match(id, new ServiceProviderFactory.Criteria(id))) {
-                return factory.create(id, null);
-            }
-        }
-        throw new UnsupportedOperationException("not any service provide factory matched.");
+        return this.create(
+                id,
+                new ServiceProviderFactory.Criteria(id),
+                ServiceProviderFactory.class
+        );
     }
 
     public ThirdAccount createThirdAccount(long id, String username, String spType) {
