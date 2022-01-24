@@ -1,5 +1,7 @@
 package com.github.taccisum.pigeon.core.data;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import lombok.Data;
@@ -11,6 +13,7 @@ import lombok.Data;
 @Data
 @TableName("message")
 public class MessageDO {
+    @TableId(type = IdType.AUTO)
     private Long id;
     /**
      * 发送人

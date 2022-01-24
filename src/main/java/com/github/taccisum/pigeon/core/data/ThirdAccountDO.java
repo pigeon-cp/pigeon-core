@@ -1,5 +1,7 @@
 package com.github.taccisum.pigeon.core.data;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -10,6 +12,7 @@ import lombok.Data;
 @Data
 @TableName("third_account")
 public class ThirdAccountDO {
+    @TableId(type = IdType.AUTO)
     private Long id;
     /**
      * 服务商类型

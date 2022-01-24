@@ -7,7 +7,7 @@
     <name>Pigeon Core</name>
     <groupId>com.github.taccisum</groupId>
     <artifactId>pigeon-core</artifactId>
-    <version>0.1</version>
+    <version>0.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <description>Defines core domain model and extension points of pigeon service.</description>
 
