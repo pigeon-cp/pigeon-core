@@ -10,6 +10,30 @@
     <packaging>jar</packaging>
     <description>Defines core domain model and extension points of pigeon service.</description>
 
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://mit-license.org/</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <url>https://github.com/pigeon-cp/pigeon-core</url>
+
+    <developers>
+        <developer>
+            <name>taccisum</name>
+            <email>514162920@qq.com</email>
+            <url>https://taccisum.github.io</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/pigeon-cp/pigeon-core</url>
+        <connection>https://github.com/pigeon-cp/pigeon-core.git</connection>
+        <developerConnection>https://github.com/pigeon-cp</developerConnection>
+    </scm>
+
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
