@@ -79,7 +79,11 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         o.setTarget(user.getAccountFor(this));
         o.setTargetUserId(user.getId());
         o.setTemplateId(this.id());
-        o.setParams(JsonUtils.stringify(params));
+        if (params instanceof String) {
+            o.setParams((String) params);
+        } else {
+            o.setParams(JsonUtils.stringify(params));
+        }
         o.setTitle(data.getTitle());
         o.setContent(data.getContent());
         o.setTag(data.getTag());
