@@ -19,14 +19,12 @@ import java.util.Optional;
 @Component
 public class ThirdAccountRepo {
     @Resource
-    private ThirdAccountDAO mapper;
+    private ThirdAccountDAO dao;
     @Resource
     private Factory factory;
 
     public Optional<ThirdAccount> getByUsername(String name) {
-        List<ThirdAccountDO> ls = mapper.selectList(new LambdaQueryWrapper<ThirdAccountDO>()
-                .eq(ThirdAccountDO::getUsername, name)
-        );
+        List<ThirdAccountDO> ls = dao.selectByUsername(name);
         if (ls.size() > 1) {
             throw new DataErrorException("三方账号", null, String.format("账号 %s 名存在多条数据", name));
         }
@@ -38,7 +36,7 @@ public class ThirdAccountRepo {
     }
 
     public Optional<ThirdAccount> get(long id) {
-        ThirdAccountDO data = mapper.selectById(id);
+        ThirdAccountDO data = dao.selectById(id);
         if (data == null) {
             return Optional.empty();
         }
