@@ -65,7 +65,7 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     }
 
     public MessageMass createMessageMass(Long id) {
-        return new MessageMass(id);
+        return new MessageMass.Default(id);
     }
 
     /**

@@ -28,24 +28,22 @@ import java.util.stream.Collectors;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
  */
-public class MessageMass extends Entity.Base<Long> {
+public abstract class MessageMass extends Entity.Base<Long> {
     /**
      * 子集大小
      */
     private static final int SUB_MASS_SIZE = 500;
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     @Resource
-    private PluginManager pluginManager;
-    @Resource
     MessageMassDAO dao;
     @Resource
-    private SubMassRepo subMassRepo;
+    protected SubMassRepo subMassRepo;
     @Resource
-    private MessageRepo messageRepo;
+    protected MessageRepo messageRepo;
     @Resource
-    private MassTacticRepo massTacticRepo;
+    protected MassTacticRepo massTacticRepo;
     @Resource
-    private MessageDAO messageDAO;
+    protected MessageDAO messageDAO;
 
     public MessageMass(Long id) {
         super(id);
@@ -74,7 +72,7 @@ public class MessageMass extends Entity.Base<Long> {
     /**
      * 投递此消息集
      */
-    public void deliver() {
+    public final void deliver() {
         this.deliver(false);
     }
 
@@ -83,100 +81,25 @@ public class MessageMass extends Entity.Base<Long> {
      *
      * @param boost 是否加速分发
      */
-    public void deliver(boolean boost) {
+    public final void deliver(boolean boost) {
         // 显式指定加速，或者集合大小超过子集合 size 时强制加速分发
         boolean boost0 = boost || (this.size() > SUB_MASS_SIZE);
         this.updateStatus(Status.DELIVERING);
         this.publish(new StartDeliverEvent(boost0));
-
-        if (boost0) {
-            List<SubMass> submasses = this.partition();
-            List<AsyncDeliverSubMassService> services = pluginManager.getExtensions(AsyncDeliverSubMassService.class);
-            if (services == null || services.size() == 0) {
-                // TODO:: 至少提供一个扩展点
-                throw new RuntimeException("");
-            }
-            if (services.size() > 1) {
-                // TODO:: optimize
-                log.warn("仅允许存在一个 {} 扩展点，将使用优先级最高的扩展点", AsyncDeliverSubMassService.class.getSimpleName());
-                services.sort(Comparator.comparingInt(AsyncDeliverSubMassService::getOrder));
-            }
-            AsyncDeliverSubMassService service = services.get(0);
-
-            if (service != null) {
-                for (SubMass submass : submasses) {
-                    service.publish(new AsyncDeliverSubMassService.DeliverSubMassCommand(submass.id()));
-                }
-            } else {
-                // TODO:: do nothing but log
-            }
-        } else {
-            this.deliverOnLocal();
-            this.publish(new DeliveredEvent());
-            this.updateStatus(Status.ALL_DELIVERED);
-        }
+        this.doDeliver(boost);
     }
 
     /**
-     * 将此消息集合进行分片
+     * 执行分发
      *
-     * @return 分片后的消息子集合
+     * @param boost 是否加速
      */
-    private List<SubMass> partition() {
-        List<SubMass> submasses = new ArrayList<>();
-        for (int i = 0; i < this.size() / SUB_MASS_SIZE; i++) {
-            int left = i * SUB_MASS_SIZE;
-            int right = (i + 1) * SUB_MASS_SIZE;
-
-            SubMass sub = this.subMassRepo.create(this.id(), i, left, right, SUB_MASS_SIZE);
-            submasses.add(sub);
-        }
-        return submasses;
-    }
-
-    /**
-     * 在本地节点完成所有消息的分发
-     */
-    private void deliverOnLocal() {
-        int successCount = 0;
-        int failCount = 0;
-        int errorCount = 0;
-
-        for (Message message : this.listMessages(Long.MAX_VALUE)) {
-            // TODO:: 并发投递以提高性能
-            try {
-                boolean success = message.deliver();
-                if (success) {
-                    successCount++;
-                } else {
-                    failCount++;
-                }
-            } catch (Message.DeliverException e) {
-                log.warn("消息发送失败", e);
-                failCount++;
-            } catch (Exception e) {
-                log.error("消息发送出错", e);
-                // 为了确保批量发送时具有足够的可靠性，将所有单个 message 触发的 exception catch 掉
-                errorCount++;
-            }
-        }
-        this.increaseCount(successCount, failCount, errorCount);
-    }
-
-    void increaseCount(int successCount, int failCount, int errorCount) {
-        MessageMassDO data = this.data();
-        MessageMassDO o = dao.newEmptyDataObject();
-        o.setId(this.id());
-        o.setSuccessCount(Optional.ofNullable(data.getSuccessCount()).orElse(0) + successCount);
-        o.setFailCount(Optional.ofNullable(data.getFailCount()).orElse(0) + failCount);
-        o.setErrorCount(Optional.ofNullable(data.getErrorCount()).orElse(0) + errorCount);
-        this.dao.updateById(o);
-    }
+    protected abstract void doDeliver(boolean boost);
 
     /**
      * @return 集合大小
      */
-    private int size() {
+    public int size() {
         return Optional.ofNullable(this.data().getSize())
                 .orElse(0);
     }
@@ -268,6 +191,110 @@ public class MessageMass extends Entity.Base<Long> {
 
         public StartDeliverEvent(boolean boost) {
             this.boost = boost;
+        }
+    }
+
+    public static class Default extends MessageMass {
+        @Resource
+        private PluginManager pluginManager;
+
+        public Default(Long id) {
+            super(id);
+        }
+
+        @Override
+        protected void doDeliver(boolean boost) {
+            if (boost) {
+                this.deliverOnMultiNode();
+            } else {
+                this.deliverOnLocal();
+            }
+        }
+
+        /**
+         * 多节点 + 多线程加速完成分发
+         * TODO:: 未完成
+         */
+        protected void deliverOnMultiNode() {
+            List<SubMass> submasses = this.partition();
+            List<AsyncDeliverSubMassService> services = pluginManager.getExtensions(AsyncDeliverSubMassService.class);
+            if (services == null || services.size() == 0) {
+                // TODO:: 至少提供一个扩展点
+                throw new RuntimeException("");
+            }
+            if (services.size() > 1) {
+                // TODO:: optimize
+                log.warn("仅允许存在一个 {} 扩展点，将使用优先级最高的扩展点", AsyncDeliverSubMassService.class.getSimpleName());
+                services.sort(Comparator.comparingInt(AsyncDeliverSubMassService::getOrder));
+            }
+            AsyncDeliverSubMassService service = services.get(0);
+
+            if (service != null) {
+                for (SubMass submass : submasses) {
+                    service.publish(new AsyncDeliverSubMassService.DeliverSubMassCommand(submass.id()));
+                }
+            } else {
+                // TODO:: do nothing but log
+            }
+        }
+
+        /**
+         * 在本地节点完成所有消息的分发
+         */
+        protected void deliverOnLocal() {
+            int successCount = 0;
+            int failCount = 0;
+            int errorCount = 0;
+
+            for (Message message : this.listMessages(Long.MAX_VALUE)) {
+                // TODO:: 并发投递以提高性能
+                try {
+                    boolean success = message.deliver();
+                    if (success) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } catch (Message.DeliverException e) {
+                    log.warn("消息发送失败", e);
+                    failCount++;
+                } catch (Exception e) {
+                    log.error("消息发送出错", e);
+                    // 为了确保批量发送时具有足够的可靠性，将所有单个 message 触发的 exception catch 掉
+                    errorCount++;
+                }
+            }
+            this.increaseCount(successCount, failCount, errorCount);
+            this.publish(new DeliveredEvent());
+            // TODO:: 此处不 update，应该交由事件订阅器统一 update，这样可以与 remote deliver 保持一致
+//            this.updateStatus(Status.ALL_DELIVERED);
+        }
+
+        /**
+         * 将此消息集合进行分片
+         *
+         * @return 分片后的消息子集合
+         */
+        private List<SubMass> partition() {
+            List<SubMass> submasses = new ArrayList<>();
+            for (int i = 0; i < this.size() / SUB_MASS_SIZE; i++) {
+                int left = i * SUB_MASS_SIZE;
+                int right = (i + 1) * SUB_MASS_SIZE;
+
+                SubMass sub = this.subMassRepo.create(this.id(), i, left, right, SUB_MASS_SIZE);
+                submasses.add(sub);
+            }
+            return submasses;
+        }
+
+        void increaseCount(int successCount, int failCount, int errorCount) {
+            MessageMassDO data = this.data();
+            MessageMassDO o = dao.newEmptyDataObject();
+            o.setId(this.id());
+            o.setSuccessCount(Optional.ofNullable(data.getSuccessCount()).orElse(0) + successCount);
+            o.setFailCount(Optional.ofNullable(data.getFailCount()).orElse(0) + failCount);
+            o.setErrorCount(Optional.ofNullable(data.getErrorCount()).orElse(0) + errorCount);
+            this.dao.updateById(o);
         }
     }
 }

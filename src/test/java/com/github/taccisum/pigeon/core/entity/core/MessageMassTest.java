@@ -14,12 +14,12 @@ import static org.mockito.Mockito.*;
  * @since 2022/1/21
  */
 class MessageMassTest {
-    private MessageMass mass;
+    private MessageMass.Default mass;
     private MessageMassDAO dao;
 
     @BeforeEach
     void setUp() {
-        mass = spy(new MessageMass(1L));
+        mass = spy(new MessageMass.Default(1L));
         dao = mock(MessageMassDAO.class);
         mass.dao = dao;
     }
