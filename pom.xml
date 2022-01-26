@@ -81,6 +81,7 @@
             <artifactId>javax.persistence-api</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- TODO:: 这个依赖要去掉 -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>

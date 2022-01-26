@@ -31,13 +31,13 @@ import java.util.Optional;
 public abstract class MassTactic extends Entity.Base<Long> {
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     @Resource
-    private MassTacticDAO dao;
+    protected MassTacticDAO dao;
     @Resource
-    private MessageMassDAO messageMassDAO;
+    protected MessageMassDAO messageMassDAO;
     @Resource
-    private MessageMassRepo messageMassRepo;
+    protected MessageMassRepo messageMassRepo;
     @Resource
-    private MessageTemplateRepo messageTemplateRepo;
+    protected MessageTemplateRepo messageTemplateRepo;
 
     public MassTactic(Long id) {
         super(id);
@@ -50,14 +50,14 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 测试此策略
      */
-    public MessageMass test() {
+    public final MessageMass test() {
         throw new NotImplementedException();
     }
 
     /**
      * 执行此策略
      */
-    public MessageMass exec() throws ExecException {
+    public final MessageMass exec() throws ExecException {
         MassTacticDO data = this.data();
         if (Boolean.TRUE.equals(data.getMustTest())) {
             if (!Boolean.TRUE.equals(data.getHasTest())) {
@@ -77,7 +77,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 执行策略准备工作（在海量消息群发场景有助于降低发送时延）
      */
-    public MessageMass prepare() throws PrepareException {
+    public final MessageMass prepare() throws PrepareException {
         if (this.isExecuting()) {
             throw new PrepareException("策略 %d 目前正在执行，请勿重复操作", this.id());
         }
@@ -92,7 +92,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 归档此策略
      */
-    public void archived() {
+    public final void archived() {
         if (this.isExecuting()) {
             throw new EndException("策略 %d 正在执行中，请等待执行完毕再归档", this.id());
         }
@@ -118,29 +118,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 执行准备工作
      */
-    protected MessageMass doPrepare() {
-        MassTacticDO data = this.data();
-        MessageMass mass = this.newMass();
-        MessageTemplate template = this.getMessageTemplate();
-        List<Message> messages = new ArrayList<>();
-        // TODO:: 针对海量目标群进行性能优化
-        for (MessageInfo info : this.listMessageInfos()) {
-            // TODO:: magic num
-            try {
-                if (info.getAccount() instanceof User) {
-                    messages.add(template.initMessage(info.getSender(), (User) info.getAccount(), info.getParams()));
-                } else {
-                    messages.add(template.initMessage(info.getSender(), (String) info.getAccount(), info.getParams()));
-                }
-            } catch (MessageRepo.CreateMessageException e) {
-                log.warn("发送至 {} 的消息创建失败：{}", info, e.getMessage());
-            }
-        }
-
-        mass.addAll(messages);
-        this.markPrepared(mass);
-        return mass;
-    }
+    protected abstract MessageMass doPrepare();
 
     void markPrepared(MessageMass mass) {
         MassTacticDO o = dao.newEmptyDataObject();
@@ -160,16 +138,21 @@ public abstract class MassTactic extends Entity.Base<Long> {
         }
     }
 
-    MessageMass newMass() {
+    protected MessageMass newMass() {
         return newMass(false);
     }
 
-    private MessageMass newMass(boolean test) {
-        MessageMassDO o = messageMassDAO.newEmptyDataObject();
+    /**
+     * 创建一个新的消息集
+     *
+     * @param test 是否测试集
+     */
+    protected MessageMass newMass(boolean test) {
+        MessageMassDO o = this.messageMassDAO.newEmptyDataObject();
         o.setTest(test);
         o.setSize(0);
         o.setTacticId(this.id());
-        return messageMassRepo.create(o);
+        return this.messageMassRepo.create(o);
     }
 
     List<MessageInfo> listMessageInfos() {
@@ -306,6 +289,30 @@ public abstract class MassTactic extends Entity.Base<Long> {
     public static class Default extends MassTactic {
         public Default(Long id) {
             super(id);
+        }
+
+        @Override
+        protected MessageMass doPrepare() {
+            MessageMass mass = this.newMass();
+            MessageTemplate template = this.getMessageTemplate();
+            List<Message> messages = new ArrayList<>();
+            // TODO:: 针对海量目标群进行性能优化
+            for (MessageInfo info : this.listMessageInfos()) {
+                // TODO:: magic num
+                try {
+                    if (info.getAccount() instanceof User) {
+                        messages.add(template.initMessage(info.getSender(), (User) info.getAccount(), info.getParams()));
+                    } else {
+                        messages.add(template.initMessage(info.getSender(), (String) info.getAccount(), info.getParams()));
+                    }
+                } catch (MessageRepo.CreateMessageException e) {
+                    log.warn("发送至 {} 的消息创建失败：{}", info, e.getMessage());
+                }
+            }
+
+            mass.addAll(messages);
+            this.markPrepared(mass);
+            return mass;
         }
     }
 }

@@ -145,5 +145,10 @@ class MassTacticTest {
         public FooTactic(Long id) {
             super(id);
         }
+
+        @Override
+        protected MessageMass doPrepare() {
+            return this.newMass();
+        }
     }
 }
