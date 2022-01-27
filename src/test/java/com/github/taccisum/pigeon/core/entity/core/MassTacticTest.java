@@ -34,7 +34,9 @@ class MassTacticTest {
             Data data = new Data();
             doReturn(data).when(tactic).data();
             MessageMass mass = mock(MessageMass.class);
-            doReturn(mass).when(tactic).prepare();
+            doReturn(false).when(tactic).isExecuting();
+            doReturn(false).when(tactic).hasPrepared();
+            doReturn(mass).when(tactic).doPrepare();
 
             tactic.exec();
             verify(tactic, times(1)).prepare();
@@ -103,22 +105,31 @@ class MassTacticTest {
     }
 
     @Nested
-    @DisplayName("#doPrepare(...)")
-    class DoPrepare {
-        @Test
-        @DisplayName("index")
-        void index() {
-            doReturn(new Data()).when(tactic).data();
-            MessageMass mass = mock(MessageMass.class);
-            doReturn(mass).when(tactic).newMass();
-            doReturn(mock(MessageTemplate.class)).when(tactic).getMessageTemplate();
-            doReturn(new ArrayList<>()).when(tactic).listMessageInfos();
-            doNothing().when(tactic).markPrepared(mass);
+    @DisplayName("$Default")
+    class Default {
+        @BeforeEach
+        void setUp() {
+            tactic = spy(new MassTactic.Default(1L));
+        }
 
-            tactic.doPrepare();
+        @Nested
+        @DisplayName("#doPrepare(...)")
+        class DoPrepareTest {
+            @Test
+            @DisplayName("index")
+            void index() {
+                doReturn(new Data()).when(tactic).data();
+                MessageMass mass = mock(MessageMass.class);
+                doReturn(mass).when(tactic).newMass();
+                doReturn(mock(MessageTemplate.class)).when(tactic).getMessageTemplate();
+                doReturn(new ArrayList<>()).when(tactic).listMessageInfos();
+                doNothing().when(tactic).markPrepared(mass);
 
-            verify(mass, times(1)).addAll(any());
-            verify(tactic, times(1)).markPrepared(mass);
+                tactic.doPrepare();
+
+                verify(mass, times(1)).addAll(any());
+                verify(tactic, times(1)).markPrepared(mass);
+            }
         }
     }
 

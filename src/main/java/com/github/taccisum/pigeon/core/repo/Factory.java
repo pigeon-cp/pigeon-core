@@ -2,6 +2,7 @@ package com.github.taccisum.pigeon.core.repo;
 
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.pigeon.core.entity.core.*;
+import com.github.taccisum.pigeon.core.entity.core.mass.MultiNodeDeliverMessageMass;
 import com.github.taccisum.pigeon.core.repo.factory.*;
 import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,7 +66,7 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     }
 
     public MessageMass createMessageMass(Long id) {
-        return new MessageMass.Default(id);
+        return new MultiNodeDeliverMessageMass(id);
     }
 
     /**

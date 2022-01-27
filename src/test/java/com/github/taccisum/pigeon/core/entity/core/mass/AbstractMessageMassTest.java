@@ -1,7 +1,8 @@
-package com.github.taccisum.pigeon.core.entity.core;
+package com.github.taccisum.pigeon.core.entity.core.mass;
 
 import com.github.taccisum.pigeon.core.dao.MessageMassDAO;
 import com.github.taccisum.pigeon.core.data.MessageMassDO;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,13 +14,13 @@ import static org.mockito.Mockito.*;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 2022/1/21
  */
-class MessageMassTest {
-    private MessageMass.Default mass;
+class AbstractMessageMassTest {
+    private AbstractMessageMass mass;
     private MessageMassDAO dao;
 
     @BeforeEach
     void setUp() {
-        mass = spy(new MessageMass.Default(1L));
+        mass = spy(new FooMass(1L));
         dao = mock(MessageMassDAO.class);
         mass.dao = dao;
     }
@@ -65,5 +66,17 @@ class MessageMassTest {
     @lombok.Data
     public class Data extends MessageMassDO {
         private Long id;
+    }
+
+    @Slf4j
+    public static class FooMass extends AbstractMessageMass {
+        public FooMass(Long id) {
+            super(id);
+        }
+
+        @Override
+        protected void doDeliver(boolean boost) {
+            log.info("Mass {} has been delivered", this.id());
+        }
     }
 }
