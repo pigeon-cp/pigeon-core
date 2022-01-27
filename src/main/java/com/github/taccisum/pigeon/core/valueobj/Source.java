@@ -3,8 +3,10 @@ package com.github.taccisum.pigeon.core.valueobj;
 import lombok.Getter;
 import org.apache.commons.lang.NotImplementedException;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,12 +28,25 @@ public interface Source {
      */
     List<String> listAllLines();
 
+    /**
+     * 获取 source 大小
+     */
+    int size();
+
     abstract class Base implements Source {
         @Getter
         private String source;
 
         public Base(String source) {
             this.source = source;
+        }
+
+        @Override
+        public int size() {
+            BufferedReader br = new BufferedReader(new InputStreamReader(this.getInputStream()));
+            // TODO:: cast int
+            // TODO:: handle head
+            return (int) br.lines().count() - 1;
         }
     }
 

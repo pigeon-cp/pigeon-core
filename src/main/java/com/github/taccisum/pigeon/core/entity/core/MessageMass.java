@@ -75,6 +75,14 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
     void markDelivered();
 
     /**
+     * 标识消息集合状态为已分发
+     */
+    default void markDeliveredAndPublicEvent() {
+        this.markDelivered();
+        this.publish(new DeliveredEvent());
+    }
+
+    /**
      * 获取此消息集归属的群发策略实体
      */
     Optional<MassTactic> getTactic();

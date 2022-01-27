@@ -116,24 +116,34 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         return this.resolve(source, new MessageInfo());
     }
 
+    public List<MessageInfo> resolve(Source source, MessageInfo def) throws ResolveSourceException {
+        return this.resolve(0, Integer.MAX_VALUE, source, def);
+    }
+
     /**
      * 解析群发数据源为消息目标实体
      *
+     * @param start  起始行（包含）
+     * @param end    结束行（不包含）
      * @param source 目标源
      * @param def    缺省值（充当数据源中缺失的信息默认值）
      */
-    public List<MessageInfo> resolve(Source source, MessageInfo def) throws ResolveSourceException {
+    public List<MessageInfo> resolve(Integer start, Integer end, Source source, MessageInfo def) {
         List<MessageInfo> targets = new ArrayList<>();
         try {
             CSVParser csv = CSVFormat.DEFAULT.builder()
                     .setHeader().setSkipHeaderRecord(true)
                     .build().parse(new BufferedReader(new InputStreamReader(source.getInputStream())));
             for (CSVRecord row : csv) {
-                MessageInfo target = this.map(row, def);
-                if (target != null) {
-                    targets.add(target);
-                } else {
-                    log.warn("第 {} 行： {} 解析失败", csv.getRecordNumber(), row);
+                // 不计入 header，真正的 line num 应该 - 1
+                long lineNum = row.getRecordNumber() - 1;
+                if (lineNum >= start && lineNum < end) {
+                    MessageInfo target = this.map(row, def);
+                    if (target != null) {
+                        targets.add(target);
+                    } else {
+                        log.warn("第 {} 行： {} 解析失败", lineNum, row);
+                    }
                 }
             }
         } catch (IOException e) {

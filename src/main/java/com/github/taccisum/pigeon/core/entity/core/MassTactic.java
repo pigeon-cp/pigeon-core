@@ -18,9 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 消息群发策略
@@ -54,10 +55,14 @@ public abstract class MassTactic extends Entity.Base<Long> {
         throw new NotImplementedException();
     }
 
+    public final MessageMass exec() throws ExecException {
+        return this.exec(false);
+    }
+
     /**
      * 执行此策略
      */
-    public final MessageMass exec() throws ExecException {
+    public final MessageMass exec(boolean boost) throws ExecException {
         MassTacticDO data = this.data();
         if (Boolean.TRUE.equals(data.getMustTest())) {
             if (!Boolean.TRUE.equals(data.getHasTest())) {
@@ -67,7 +72,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
         MessageMass mass = null;
         try {
             mass = this.prepare();
-            mass.deliver();
+            mass.deliver(boost);
             return mass;
         } catch (PrepareException e) {
             throw new ExecException(e);
@@ -150,12 +155,36 @@ public abstract class MassTactic extends Entity.Base<Long> {
     protected MessageMass newMass(boolean test) {
         MessageMassDO o = this.messageMassDAO.newEmptyDataObject();
         o.setTest(test);
-        o.setSize(0);
+        if (!test) {
+            o.setSize(this.getSourceSize());
+        }
         o.setTacticId(this.id());
         return this.messageMassRepo.create(o);
     }
 
-    List<MessageInfo> listMessageInfos() {
+    int getSourceSize() {
+        Integer size = this.data().getSourceSize();
+        if (size == null) {
+            size = this.getSource().size();
+            // update cache
+            MassTacticDO o = dao.newEmptyDataObject();
+            o.setId(this.id());
+            o.setSourceSize(size);
+            this.dao.updateById(o);
+        }
+
+        return size;
+    }
+
+    public List<MessageInfo> listMessageInfos(Integer start, Integer end) {
+        MessageInfo def = new MessageInfo();
+        def.setSender(this.data().getDefaultSender());
+        def.setParams(this.data().getDefaultParams());
+        return this.getMessageTemplate()
+                .resolve(start, end, this.getSource(), def);
+    }
+
+    public List<MessageInfo> listMessageInfos() {
         MessageInfo def = new MessageInfo();
         def.setSender(this.data().getDefaultSender());
         def.setParams(this.data().getDefaultParams());
@@ -163,7 +192,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
                 .resolve(this.getSource(), def);
     }
 
-    MessageTemplate getMessageTemplate() {
+    public MessageTemplate getMessageTemplate() {
         return this.messageTemplateRepo.getOrThrow(this.data().getTemplateId());
     }
 
@@ -294,24 +323,33 @@ public abstract class MassTactic extends Entity.Base<Long> {
         @Override
         protected MessageMass doPrepare() {
             MessageMass mass = this.newMass();
-            MessageTemplate template = this.getMessageTemplate();
-            List<Message> messages = new ArrayList<>();
-            // TODO:: 针对海量目标群进行性能优化
-            for (MessageInfo info : this.listMessageInfos()) {
-                // TODO:: magic num
-                try {
-                    if (info.getAccount() instanceof User) {
-                        messages.add(template.initMessage(info.getSender(), (User) info.getAccount(), info.getParams()));
-                    } else {
-                        messages.add(template.initMessage(info.getSender(), (String) info.getAccount(), info.getParams()));
-                    }
-                } catch (MessageRepo.CreateMessageException e) {
-                    log.warn("发送至 {} 的消息创建失败：{}", info, e.getMessage());
-                }
-            }
+            if (mass instanceof PartitionCapable) {
+                ((PartitionCapable) mass).partition()
+                        .parallelStream()
+                        .forEach(SubMass::prepare);
+            } else {
+                // 不可分片的 mass，遍历来实现
+                MessageTemplate template = this.getMessageTemplate();
+                List<Message> messages = this.listMessageInfos()
+                        .parallelStream()
+                        .map(info -> {
+                            try {
+                                if (info.getAccount() instanceof User) {
+                                    return template.initMessage(info.getSender(), (User) info.getAccount(), info.getParams());
+                                } else {
+                                    return template.initMessage(info.getSender(), (String) info.getAccount(), info.getParams());
+                                }
+                            } catch (MessageRepo.CreateMessageException e) {
+                                log.warn("发送至 {} 的消息创建失败：{}", info, e.getMessage());
+                            }
+                            return null;
+                        })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
 
-            mass.addAll(messages);
-            this.markPrepared(mass);
+                mass.addAll(messages);
+                this.markPrepared(mass);
+            }
             return mass;
         }
     }

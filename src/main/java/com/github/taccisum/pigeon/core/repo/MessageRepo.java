@@ -5,12 +5,16 @@ import com.github.taccisum.pigeon.core.dao.MessageDAO;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.MessageTemplate;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +29,15 @@ public class MessageRepo {
     private Factory factory;
     @Resource
     MessageTemplateRepo messageTemplateRepo;
+
+    /**
+     * 根据关联的第三方消息 id 查找消息实体
+     *
+     * @param id 第三方消息 id
+     */
+    public Optional<Message> getByThirdId(String id) {
+        throw new NotImplementedException();
+    }
 
     /**
      * 创建一条新的消息实体（初始状态默认为 {@link  Message.Status#NOT_SEND}）
@@ -60,6 +73,20 @@ public class MessageRepo {
 
     public List<Message> listByMassId(Long massId, long limit) {
         return this.dao.selectListByMassId(massId, limit)
+                .stream()
+                .map(data -> factory.createMessage(data.getId(), data.getType(), data.getSpType()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Message> listBySubMassId(Long subMassId) {
+        return this.toEntities(this.dao.selectListBySubMassId(subMassId));
+    }
+
+    private List<Message> toEntities(List<MessageDO> ls) {
+        if (CollectionUtils.isEmpty(ls)) {
+            return new ArrayList<>();
+        }
+        return ls
                 .stream()
                 .map(data -> factory.createMessage(data.getId(), data.getType(), data.getSpType()))
                 .collect(Collectors.toList());

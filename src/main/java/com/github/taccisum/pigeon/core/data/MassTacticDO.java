@@ -46,6 +46,10 @@ public abstract class MassTacticDO implements DataObject<Long> {
      */
     private String source;
     /**
+     * 数据源 size（冗余）
+     */
+    private Integer sourceSize;
+    /**
      * 数据源类型
      */
     private MassTactic.SourceType sourceType;

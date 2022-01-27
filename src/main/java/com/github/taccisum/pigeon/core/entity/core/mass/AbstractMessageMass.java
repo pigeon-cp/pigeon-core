@@ -7,7 +7,6 @@ import com.github.taccisum.pigeon.core.data.MessageMassDO;
 import com.github.taccisum.pigeon.core.entity.core.MassTactic;
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.MessageMass;
-import com.github.taccisum.pigeon.core.entity.core.SubMass;
 import com.github.taccisum.pigeon.core.repo.MassTacticRepo;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.repo.SubMassRepo;
@@ -16,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -28,10 +26,6 @@ import java.util.stream.Collectors;
  * @since 0.2
  */
 public abstract class AbstractMessageMass extends Entity.Base<Long> implements MessageMass {
-    /**
-     * 子集大小
-     */
-    private static final int SUB_MASS_SIZE = 500;
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     @Resource
     MessageMassDAO dao;
@@ -59,12 +53,15 @@ public abstract class AbstractMessageMass extends Entity.Base<Long> implements M
     }
 
     @Override
-    public final void deliver(boolean boost) {
-        // 显式指定加速，或者集合大小超过子集合 size 时强制加速分发
-        boolean boost0 = boost || (this.size() > SUB_MASS_SIZE);
+    public void deliver(boolean boost) {
         this.updateStatus(Status.DELIVERING);
-        this.publish(new StartDeliverEvent(boost0));
-        this.doDeliver(boost);
+        this.publish(new StartDeliverEvent(boost));
+        if (this.size() <= 0) {
+            log.warn("消息集 {} size 为 0，无需进行任何分发操作", this.id());
+            this.markDeliveredAndPublicEvent();
+        } else {
+            this.doDeliver(boost);
+        }
     }
 
     protected abstract void doDeliver(boolean boost);
@@ -96,7 +93,6 @@ public abstract class AbstractMessageMass extends Entity.Base<Long> implements M
     @Override
     public void markPrepared() {
         this.updateStatus(Status.NOT_DELIVERED);
-//        this.publish();
     }
 
     @Override
@@ -104,7 +100,7 @@ public abstract class AbstractMessageMass extends Entity.Base<Long> implements M
         this.updateStatus(Status.ALL_DELIVERED);
     }
 
-    private void updateStatus(Status status) {
+    protected void updateStatus(Status status) {
         MessageMassDO o = dao.newEmptyDataObject();
         o.setId(this.id());
         o.setStatus(status);
@@ -114,23 +110,6 @@ public abstract class AbstractMessageMass extends Entity.Base<Long> implements M
     @Override
     public Optional<MassTactic> getTactic() {
         return this.massTacticRepo.get(this.data().getTacticId());
-    }
-
-    /**
-     * 将此消息集合进行分片
-     *
-     * @return 分片后的消息子集合
-     */
-    protected List<SubMass> partition() {
-        List<SubMass> submasses = new ArrayList<>();
-        for (int i = 0; i < this.size() / SUB_MASS_SIZE; i++) {
-            int left = i * SUB_MASS_SIZE;
-            int right = (i + 1) * SUB_MASS_SIZE;
-
-            SubMass sub = this.subMassRepo.create(this.id(), i, left, right, SUB_MASS_SIZE);
-            submasses.add(sub);
-        }
-        return submasses;
     }
 
     protected void increaseCount(int successCount, int failCount, int errorCount) {

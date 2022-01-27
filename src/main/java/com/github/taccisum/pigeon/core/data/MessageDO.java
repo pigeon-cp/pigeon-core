@@ -71,4 +71,8 @@ public class MessageDO {
      * 所属消息集 id
      */
     private Long massId;
+    /**
+     * 所属消息子集 id
+     */
+    private Long subMassId;
 }

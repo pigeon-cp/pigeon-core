@@ -2,6 +2,7 @@ package com.github.taccisum.pigeon.core.event.handler;
 
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.MessageMass;
+import com.github.taccisum.pigeon.core.entity.core.SubMass;
 import com.google.common.eventbus.Subscribe;
 
 public interface DomainEventSubscriber {
@@ -19,5 +20,9 @@ public interface DomainEventSubscriber {
 
     @Subscribe
     default void listen(MessageMass.DeliveredEvent e) throws Throwable {
+    }
+
+    @Subscribe
+    default void listen(SubMass.DeliveredEvent e) throws Throwable {
     }
 }
