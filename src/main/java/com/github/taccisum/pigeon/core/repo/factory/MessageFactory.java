@@ -2,6 +2,7 @@ package com.github.taccisum.pigeon.core.repo.factory;
 
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.message.ConsoleMessage;
+import com.github.taccisum.pigeon.core.entity.core.message.LogMessage;
 import com.github.taccisum.pigeon.core.repo.EntityFactory;
 import lombok.Data;
 import org.pf4j.Extension;
@@ -28,14 +29,20 @@ public interface MessageFactory extends EntityFactory<Long, Message, MessageFact
     class Console implements MessageFactory {
         @Override
         public Message create(Long id, Criteria criteria) {
-            return new ConsoleMessage(id);
+            String type = Optional.ofNullable(criteria.getType()).orElse("");
+            switch (type.toUpperCase()) {
+                case "CONSOLE":
+                    return new ConsoleMessage(id);
+                case "LOG":
+                    return new LogMessage(id);
+                default:
+                    throw new UnsupportedOperationException(type);
+            }
         }
 
         @Override
         public boolean match(Long id, Criteria criteria) {
-            return "CONSOLE".equalsIgnoreCase(Optional.ofNullable(criteria.getType()).orElse(""))
-                    && "PIGEON".equalsIgnoreCase(Optional.ofNullable(criteria.getSpType()).orElse(""))
-                    ;
+            return "PIGEON".equalsIgnoreCase(Optional.ofNullable(criteria.getSpType()).orElse(""));
         }
     }
 }
