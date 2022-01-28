@@ -113,7 +113,8 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
             // 本地处理
             return new SimpleIndex();
         }
-        return null;
+        log.warn("无法识别此占位符规则 {}，将返回默认规则", name);
+        return new Direct();
     }
 
     /**

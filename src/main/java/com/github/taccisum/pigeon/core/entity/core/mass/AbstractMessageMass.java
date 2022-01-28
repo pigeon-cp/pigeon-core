@@ -160,7 +160,7 @@ public abstract class AbstractMessageMass extends Entity.Base<Long> implements M
         public void prepare() {
             // 不可分片的 mass，遍历来实现
             MassTactic tactic = this.getTactic().orElseThrow(() -> {
-                return new DataErrorException("", "", "");
+                return new DataErrorException("消息集合", this.id(), "关联的群发策略不存在");
             });
             MessageTemplate template = tactic.getMessageTemplate();
             List<Message> messages = tactic.listMessageInfos()
