@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
  * @since 0.2
  */
 public class LogMessage extends Message {
-    private Logger log = LoggerFactory.getLogger("LoggerMessage");
+    private Logger log = LoggerFactory.getLogger("LogMessage");
 
     public LogMessage(Long id) {
         super(id);
