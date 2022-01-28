@@ -1,5 +1,6 @@
 package com.github.taccisum.pigeon.core.entity.core.message;
 
+import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.ThirdAccount;
 import com.github.taccisum.pigeon.core.entity.core.sp.MessageServiceProvider;
@@ -23,7 +24,13 @@ public class ConsoleMessage extends Message {
 
     @Override
     protected void doDelivery() throws Exception {
-        System.out.println(this.data().getContent());
+        MessageDO data = this.data();
+        System.out.printf("To %s. %s %s - by %s%n",
+                data.getTarget(),
+                data.getTitle(),
+                data.getContent(),
+                data.getSender()
+        );
     }
 
     @Override
