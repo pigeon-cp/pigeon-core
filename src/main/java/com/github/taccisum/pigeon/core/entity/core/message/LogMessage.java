@@ -29,7 +29,7 @@ public class LogMessage extends Message {
     @Override
     protected void doDelivery() throws Exception {
         MessageDO data = this.data();
-        log.info("To {}. {} {} - by {}",
+        log.info("To {}.\n{}\n{}\n  - by {}",
                 data.getTarget(),
                 data.getTitle(),
                 data.getContent(),

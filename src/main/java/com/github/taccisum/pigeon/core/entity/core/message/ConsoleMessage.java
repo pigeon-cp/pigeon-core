@@ -25,7 +25,7 @@ public class ConsoleMessage extends Message {
     @Override
     protected void doDelivery() throws Exception {
         MessageDO data = this.data();
-        System.out.printf("To %s. %s %s - by %s%n",
+        System.out.printf("To %s.\n%s\n%s\n  - by %s",
                 data.getTarget(),
                 data.getTitle(),
                 data.getContent(),
