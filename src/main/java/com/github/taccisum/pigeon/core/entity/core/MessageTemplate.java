@@ -11,7 +11,11 @@ import com.github.taccisum.pigeon.core.repo.UserRepo;
 import com.github.taccisum.pigeon.core.utils.CSVUtils;
 import com.github.taccisum.pigeon.core.utils.JsonUtils;
 import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
+import com.github.taccisum.pigeon.core.valueobj.PlaceHolderRule;
 import com.github.taccisum.pigeon.core.valueobj.Source;
+import com.github.taccisum.pigeon.core.valueobj.rule.ph.Direct;
+import com.github.taccisum.pigeon.core.valueobj.rule.ph.SimpleIndex;
+import com.google.common.collect.Sets;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -25,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 消息模板，可以是短信模板、邮件模板等等
@@ -84,10 +89,31 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         } else {
             o.setParams(JsonUtils.stringify(params));
         }
+
+        PlaceHolderRule rule = this.getPlaceHolderRule(data.getPlaceholderRule());
         o.setTitle(data.getTitle());
-        o.setContent(data.getContent());
+        o.setContent(rule.resolve(data.getContent(), o.getParams()));
+
         o.setTag(data.getTag());
         return messageRepo.create(o);
+    }
+
+    /**
+     * 获取模板占位符规则
+     *
+     * @param name 规则名称
+     */
+    protected PlaceHolderRule getPlaceHolderRule(String name) {
+        Set<String> directKeys = Sets.newHashSet("DIRECT", "NONE", "REMOTE");
+        if (StringUtils.isBlank(name) || directKeys.contains(name.toUpperCase().trim())) {
+            return new Direct();
+        }
+
+        if (name.startsWith("LOCAL:SIMPLE")) {
+            // 本地处理
+            return new SimpleIndex();
+        }
+        return null;
     }
 
     /**
