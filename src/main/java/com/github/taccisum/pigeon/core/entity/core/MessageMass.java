@@ -5,7 +5,6 @@ import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.domain.core.EventPublisher;
 import com.github.taccisum.pigeon.core.data.MessageMassDO;
-import lombok.Getter;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,16 +35,7 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
     /**
      * 投递此消息集
      */
-    default void deliver() {
-        deliver(false);
-    }
-
-    /**
-     * 投递此消息集
-     *
-     * @param boost 是否加速分发
-     */
-    void deliver(boolean boost);
+    void deliver() throws DeliverException;
 
     /**
      * @return 集合大小
@@ -87,6 +77,8 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
      */
     Optional<MassTactic> getTactic();
 
+    void prepare();
+
     /**
      * 消息集全部分发完成事件
      */
@@ -122,11 +114,7 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
     }
 
     class StartDeliverEvent extends Event.Base<MessageMass> {
-        @Getter
-        private boolean boost;
-
-        public StartDeliverEvent(boolean boost) {
-            this.boost = boost;
+        public StartDeliverEvent() {
         }
     }
 

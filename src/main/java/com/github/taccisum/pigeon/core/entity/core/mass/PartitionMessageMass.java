@@ -1,6 +1,5 @@
 package com.github.taccisum.pigeon.core.entity.core.mass;
 
-import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.PartitionCapable;
 import com.github.taccisum.pigeon.core.entity.core.SubMass;
 import org.springframework.util.CollectionUtils;
@@ -26,60 +25,17 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
     }
 
     @Override
-    public void deliver(boolean boost) {
-        if (this.size() > SUB_MASS_SIZE) {
-            log.info("消息集 {} size 大于 {}，将强制执行 boost 分发", this.id(), SUB_MASS_SIZE);
-            super.deliver(true);
-        } else {
-            super.deliver(boost);
-        }
+    public void prepare() {
+        this.partition()
+                .parallelStream()
+                .forEach(SubMass::prepare);
+        this.markPrepared();
     }
 
     @Override
-    protected void doDeliver(boolean boost) {
-        if (boost) {
-            this.deliverOnPartitions();
-        } else {
-            this.deliverOnLocal();
-        }
-    }
-
-    /**
-     * 分片进行投递
-     */
-    void deliverOnPartitions() {
-        this.partition()
-                .forEach(this::deliverSubMass);
-    }
-
-    /**
-     * 在本地节点完成所有消息的分发
-     */
-    void deliverOnLocal() {
-        int successCount = 0;
-        int failCount = 0;
-        int errorCount = 0;
-
-        for (Message message : this.listMessages(Long.MAX_VALUE)) {
-            // TODO:: 并发投递以提高性能
-            try {
-                boolean success = message.deliver();
-                if (success) {
-                    successCount++;
-                } else {
-                    failCount++;
-                }
-            } catch (Message.DeliverException e) {
-                log.warn("消息发送失败", e);
-                failCount++;
-            } catch (Exception e) {
-                log.error("消息发送出错", e);
-                // 为了确保批量发送时具有足够的可靠性，将所有单个 message 触发的 exception catch 掉
-                errorCount++;
-            }
-        }
-        this.increaseCount(successCount, failCount, errorCount);
-        this.markDeliveredAndPublicEvent();
+    protected void doDeliver() throws DeliverException {
+        // 分片进行投递
+        this.partition().forEach(SubMass::deliver);
     }
 
     /**
@@ -140,9 +96,6 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
         }
         return indexes;
     }
-
-    protected abstract void deliverSubMass(SubMass sub);
-
 
     /**
      * 标记集合为部分投递完成（若 sub 为最后一个子集，则触发 {@link DeliveredEvent} 事件）

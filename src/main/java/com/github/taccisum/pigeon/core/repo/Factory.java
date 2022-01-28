@@ -2,6 +2,7 @@ package com.github.taccisum.pigeon.core.repo;
 
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.pigeon.core.entity.core.*;
+import com.github.taccisum.pigeon.core.entity.core.mass.AbstractMessageMass;
 import com.github.taccisum.pigeon.core.entity.core.mass.AbstractSubMass;
 import com.github.taccisum.pigeon.core.entity.core.mass.AsyncPartitionMessageMass;
 import com.github.taccisum.pigeon.core.repo.factory.*;
@@ -66,8 +67,14 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         return this.create(id, new MassTacticFactory.Criteria(type), MassTacticFactory.class);
     }
 
-    public MessageMass createMessageMass(Long id) {
-        return new AsyncPartitionMessageMass(id);
+    public MessageMass createMessageMass(Long id, String type) {
+        switch (type) {
+            case "PARTITION":
+                return new AsyncPartitionMessageMass(id);
+            case "DEFAULT":
+            default:
+                return new AbstractMessageMass.Default(id);
+        }
     }
 
     public SubMass createSubMessageMass(Long id) {

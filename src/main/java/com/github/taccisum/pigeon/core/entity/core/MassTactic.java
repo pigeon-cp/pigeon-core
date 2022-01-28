@@ -8,8 +8,8 @@ import com.github.taccisum.pigeon.core.dao.MessageMassDAO;
 import com.github.taccisum.pigeon.core.data.MassTacticDO;
 import com.github.taccisum.pigeon.core.data.MessageMassDO;
 import com.github.taccisum.pigeon.core.repo.MessageMassRepo;
-import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.repo.MessageTemplateRepo;
+import com.github.taccisum.pigeon.core.service.TransactionWrapper;
 import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
 import com.github.taccisum.pigeon.core.valueobj.Source;
 import com.google.common.collect.Lists;
@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
+import static com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass.SUB_MASS_SIZE;
 
 /**
  * 消息群发策略
@@ -63,26 +63,37 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行此策略
      */
     public final MessageMass exec(boolean boost) throws ExecException {
+        if (this.getSourceSize() > SUB_MASS_SIZE) {
+            log.info("检测到策略 {} 消息源 size 大于 {}，将强制执行 boost 分发", this.id(), SUB_MASS_SIZE);
+            boost = true;
+        }
+
         MassTacticDO data = this.data();
         if (Boolean.TRUE.equals(data.getMustTest())) {
             if (!Boolean.TRUE.equals(data.getHasTest())) {
                 throw new ExecException("群发策略 %d 必须先通过测试才能执行", this.id());
             }
         }
-        MessageMass mass = null;
         try {
-            mass = this.prepare();
-            mass.deliver(boost);
+            MessageMass mass = this.prepare(boost);
+            this.markExecuting();
+            mass.deliver();
             return mass;
-        } catch (PrepareException e) {
+        } catch (PrepareException | MessageMass.DeliverException e) {
             throw new ExecException(e);
         }
     }
 
+    public final MessageMass prepare() throws PrepareException {
+        return this.prepare(false);
+    }
+
     /**
      * 执行策略准备工作（在海量消息群发场景有助于降低发送时延）
+     *
+     * @param boost 是否加速
      */
-    public final MessageMass prepare() throws PrepareException {
+    public final MessageMass prepare(boolean boost) throws PrepareException {
         if (this.isExecuting()) {
             throw new PrepareException("策略 %d 目前正在执行，请勿重复操作", this.id());
         }
@@ -91,7 +102,9 @@ public abstract class MassTactic extends Entity.Base<Long> {
             return this.getPreparedMass()
                     .orElseThrow(() -> new DataErrorException("群发策略", this.id(), "hasPrepared 但消息集不存在"));
         }
-        return this.doPrepare();
+        MessageMass preparedMass = this.doPrepare(boost);
+        this.markPrepared(preparedMass);
+        return preparedMass;
     }
 
     /**
@@ -123,14 +136,37 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 执行准备工作
      */
-    protected abstract MessageMass doPrepare();
+    protected MessageMass doPrepare() {
+        return this.doPrepare(false);
+    }
 
+    /**
+     * 执行准备工作
+     *
+     * @param boost 是否加速
+     */
+    protected MessageMass doPrepare(boolean boost) {
+        MessageMass mass;
+        if (boost) {
+            mass = this.newBoostMass();
+        } else {
+            mass = this.newMass();
+        }
+
+        mass.prepare();
+        return mass;
+    }
+
+    /**
+     * 标记为已准备好
+     *
+     * @param mass 准备好的消息集
+     */
     void markPrepared(MessageMass mass) {
         MassTacticDO o = dao.newEmptyDataObject();
         o.setId(this.id());
         o.setPreparedMassId(mass.getId());
         o.setStatus(Status.PREPARED);
-        mass.markPrepared();
         this.dao.updateById(o);
     }
 
@@ -147,6 +183,15 @@ public abstract class MassTactic extends Entity.Base<Long> {
         return newMass(false);
     }
 
+    protected MessageMass newBoostMass() {
+        MessageMassDO o = this.messageMassDAO.newEmptyDataObject();
+        o.setTest(false);
+        o.setSize(this.getSourceSize());
+        o.setType("PARTITION");
+        o.setTacticId(this.id());
+        return this.messageMassRepo.create(o);
+    }
+
     /**
      * 创建一个新的消息集
      *
@@ -154,6 +199,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
      */
     protected MessageMass newMass(boolean test) {
         MessageMassDO o = this.messageMassDAO.newEmptyDataObject();
+        o.setType("DEFAULT");
         o.setTest(test);
         if (!test) {
             o.setSize(this.getSourceSize());
@@ -233,8 +279,8 @@ public abstract class MassTactic extends Entity.Base<Long> {
         this.updateStatus(Status.AVAILABLE);
         MassTacticDO o = dao.newEmptyDataObject();
         o.setStatus(Status.AVAILABLE);
-        // TODO:: mp 更新为 null 比较麻烦，先置为 0
-        o.setPreparedMassId(0L);
+        // TODO:: mp 更新为 null 比较麻烦，先置为 -1
+        o.setPreparedMassId(-1L);
         this.dao.updateById(o);
     }
 
@@ -316,41 +362,11 @@ public abstract class MassTactic extends Entity.Base<Long> {
     }
 
     public static class Default extends MassTactic {
+        @Resource
+        private TransactionWrapper transactionWrapper;
+
         public Default(Long id) {
             super(id);
-        }
-
-        @Override
-        protected MessageMass doPrepare() {
-            MessageMass mass = this.newMass();
-            if (mass instanceof PartitionCapable) {
-                ((PartitionCapable) mass).partition()
-                        .parallelStream()
-                        .forEach(SubMass::prepare);
-            } else {
-                // 不可分片的 mass，遍历来实现
-                MessageTemplate template = this.getMessageTemplate();
-                List<Message> messages = this.listMessageInfos()
-                        .parallelStream()
-                        .map(info -> {
-                            try {
-                                if (info.getAccount() instanceof User) {
-                                    return template.initMessage(info.getSender(), (User) info.getAccount(), info.getParams());
-                                } else {
-                                    return template.initMessage(info.getSender(), (String) info.getAccount(), info.getParams());
-                                }
-                            } catch (MessageRepo.CreateMessageException e) {
-                                log.warn("发送至 {} 的消息创建失败：{}", info, e.getMessage());
-                            }
-                            return null;
-                        })
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-
-                mass.addAll(messages);
-                this.markPrepared(mass);
-            }
-            return mass;
         }
     }
 }

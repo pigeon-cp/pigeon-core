@@ -75,8 +75,13 @@ class AbstractMessageMassTest {
         }
 
         @Override
-        protected void doDeliver(boolean boost) {
+        protected void doDeliver() {
             log.info("Mass {} has been delivered", this.id());
+        }
+
+        @Override
+        public void prepare() {
+
         }
     }
 }

@@ -16,6 +16,10 @@ public abstract class MessageMassDO implements DataObject<Long> {
     public abstract void setId(Long id);
 
     /**
+     * 消息类类型
+     */
+    private String type;
+    /**
      * 是否测试集
      */
     private Boolean test;

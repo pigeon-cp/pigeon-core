@@ -181,6 +181,9 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         return info;
     }
 
+    /**
+     * TODO:: rename
+     */
     protected abstract String getAccountHeaderName();
 
     /**
@@ -189,6 +192,22 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     public static class ResolveSourceException extends DomainException {
         public ResolveSourceException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    public static class Default extends MessageTemplate {
+        public Default(Long id) {
+            super(id);
+        }
+
+        @Override
+        public String getMessageType() {
+            return this.data().getType();
+        }
+
+        @Override
+        protected String getAccountHeaderName() {
+            return "target";
         }
     }
 }

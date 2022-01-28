@@ -1,7 +1,6 @@
 package com.github.taccisum.pigeon.core.entity.core.mass;
 
 import com.github.taccisum.pigeon.core.data.MessageMassDO;
-import com.github.taccisum.pigeon.core.entity.core.SubMass;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -10,7 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.spy;
 
 /**
  * @author taccisum - liaojinfeng6938@dingtalk.com
@@ -22,33 +21,7 @@ class PartitionMessageMassTest {
     @BeforeEach
     void setUp() {
         mass = spy(new PartitionMessageMass(1L) {
-            @Override
-            protected void deliverSubMass(SubMass sub) {
-                // ignore
-            }
         });
-    }
-
-    @Nested
-    @DisplayName("#doDelivery()")
-    class DoDeliveryTest {
-        @Test
-        @DisplayName("index0")
-        void index() {
-            doNothing().when(mass).deliverOnPartitions();
-            mass.doDeliver(true);
-            verify(mass, times(1)).deliverOnPartitions();
-            verify(mass, times(0)).deliverOnLocal();
-        }
-
-        @Test
-        @DisplayName("index1")
-        void index1() {
-            doNothing().when(mass).deliverOnLocal();
-            mass.doDeliver(false);
-            verify(mass, times(0)).deliverOnPartitions();
-            verify(mass, times(1)).deliverOnLocal();
-        }
     }
 
     @Nested

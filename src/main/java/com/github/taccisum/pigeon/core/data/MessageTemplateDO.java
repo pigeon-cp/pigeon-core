@@ -15,9 +15,13 @@ public class MessageTemplateDO {
     @TableId(type = IdType.AUTO)
     private Long id;
     /**
-     * 模板类型
+     * 模板消息类型
      */
     private String type;
+    /**
+     * 模板占位规则类型
+     */
+    private String placeholderRule;
     /**
      * 模板所关联的第三方服务商
      */
