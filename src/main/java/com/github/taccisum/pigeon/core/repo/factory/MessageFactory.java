@@ -2,6 +2,7 @@ package com.github.taccisum.pigeon.core.repo.factory;
 
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.message.ConsoleMessage;
+import com.github.taccisum.pigeon.core.entity.core.message.DummyMessage;
 import com.github.taccisum.pigeon.core.entity.core.message.LogMessage;
 import com.github.taccisum.pigeon.core.repo.EntityFactory;
 import lombok.Data;
@@ -35,6 +36,8 @@ public interface MessageFactory extends EntityFactory<Long, Message, MessageFact
                     return new ConsoleMessage(id);
                 case "LOG":
                     return new LogMessage(id);
+                case "DUMMY":
+                    return new DummyMessage(id);
                 default:
                     throw new UnsupportedOperationException(type);
             }
