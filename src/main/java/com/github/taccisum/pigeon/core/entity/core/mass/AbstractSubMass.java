@@ -12,6 +12,7 @@ import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -108,9 +109,15 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
         MessageTemplate template = tactic.getMessageTemplate();
         List<Message> messages = new ArrayList<>();
         SubMassDO data = this.data();
+        StopWatch sw = new StopWatch();
 
+        sw.start();
         List<MessageInfo> infos = tactic.listMessageInfos(data.getStart(), data.getEnd());
-        log.debug("成功获取子集 {} 关联的消息源 size: {} (start: {}, end: {})", this.id(), infos.size(), data.getStart(), data.getEnd());
+        sw.stop();
+        log.debug("成功获取子集 {} 关联的消息源 size: {} (start: {}, end: {})，耗时 {}ms",
+                this.id(), infos.size(), data.getStart(), data.getEnd(), sw.getLastTaskTimeMillis());
+
+        sw.start();
         for (MessageInfo info : infos) {
             try {
                 if (info.getAccount() instanceof User) {
@@ -119,11 +126,13 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
                     messages.add(template.initMessage(info.getSender(), (String) info.getAccount(), info.getParams()));
                 }
             } catch (MessageRepo.CreateMessageException e) {
-                log.warn("发送至 {} 的消息创建失败：{}", info, e.getMessage());
+                log.warn("发送至 {} 的消息（sub mass id: {}）创建失败：{}", info, this.id(), e.getMessage());
             }
         }
-
         this.addAll(messages);
+        sw.stop();
+        log.debug("子集 {} 所有消息初始化完毕，总耗时 {}ms", this.id(), sw.getLastTaskTimeMillis());
+
         this.markPrepared();
     }
 

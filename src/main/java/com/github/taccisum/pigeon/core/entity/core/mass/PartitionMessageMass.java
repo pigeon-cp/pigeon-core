@@ -3,6 +3,7 @@ package com.github.taccisum.pigeon.core.entity.core.mass;
 import com.github.taccisum.pigeon.core.entity.core.PartitionCapable;
 import com.github.taccisum.pigeon.core.entity.core.SubMass;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StopWatch;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,9 +27,18 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
 
     @Override
     public void prepare() {
-        this.partition()
-                .parallelStream()
+        StopWatch sw = new StopWatch();
+        sw.start();
+        List<SubMass> partitions = this.partition();
+        sw.stop();
+        log.debug("消息集 {} 切片结果：size {}，耗时 {}ms", this.id(), partitions.size(), sw.getLastTaskTimeMillis());
+
+        sw.start();
+        partitions
+                .stream()
                 .forEach(SubMass::prepare);
+        sw.stop();
+        log.debug("所有切片子集均已 Prepared，耗时 {}ms，标记主消息集 {} 状态为 Prepared", sw.getLastTaskTimeMillis(), this.id());
         this.markPrepared();
     }
 
@@ -61,7 +71,8 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
             return new ArrayList<>();
         }
         return Arrays.stream(partition(total))
-                .parallel()
+                // TODO:: 并行 insert 似乎会有隔离问题，注释掉观望一下先
+//                .parallel()
                 .map(part -> {
                     int serialNum = part[0];
                     int size = part[1];

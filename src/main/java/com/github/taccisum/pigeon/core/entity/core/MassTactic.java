@@ -16,8 +16,10 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,9 +77,22 @@ public abstract class MassTactic extends Entity.Base<Long> {
             }
         }
         try {
+            StopWatch sw = new StopWatch();
+
+            // prepare
+            sw.start();
             MessageMass mass = this.prepare(boost);
+            sw.stop();
+            log.debug("策略 {} 执行 prepare 阶段完成，总耗时 {}ms", this.id(), sw.getLastTaskTimeMillis());
+
+            // set status
             this.markExecuting();
+
+            // deliver
+            sw.start();
             mass.deliver();
+            sw.stop();
+            log.debug("消息集 {} 分发完成，总耗时 {}ms", mass.id(), sw.getLastTaskTimeMillis());
             return mass;
         } catch (PrepareException | MessageMass.DeliverException e) {
             throw new ExecException(e);
@@ -211,7 +226,10 @@ public abstract class MassTactic extends Entity.Base<Long> {
     int getSourceSize() {
         Integer size = this.data().getSourceSize();
         if (size == null) {
+            log.debug("策略 {} 消息源 size 值缓存不存在，重新计算", this.id());
+            Date start = new Date();
             size = this.getSource().size();
+            log.debug("计算完成，size: {}，总耗时 {}ms", size, System.currentTimeMillis() - start.getTime());
             // update cache
             MassTacticDO o = dao.newEmptyDataObject();
             o.setId(this.id());

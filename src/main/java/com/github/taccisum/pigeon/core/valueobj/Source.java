@@ -3,10 +3,7 @@ package com.github.taccisum.pigeon.core.valueobj;
 import lombok.Getter;
 import org.apache.commons.lang.NotImplementedException;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,11 +17,14 @@ import java.util.stream.Collectors;
 public interface Source {
     /**
      * 获取目标源输入流
+     * TODO:: throw IOException
      */
     InputStream getInputStream();
 
     /**
      * 获取数据源的所有行
+     *
+     * @deprecated 文件太大时可能会导致内存泄漏，后面看看要不要删掉这个方法，或者做控制（比如只读 head x 行）
      */
     List<String> listAllLines();
 
@@ -90,7 +90,14 @@ public interface Source {
 
         @Override
         public InputStream getInputStream() {
-            throw new NotImplementedException();
+            // check 缓存，不存在则从网络下载
+
+            java.io.File csv = new java.io.File("/tmp/pigeon/cache/source/1.csv");
+            try {
+                return new FileInputStream(csv);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
