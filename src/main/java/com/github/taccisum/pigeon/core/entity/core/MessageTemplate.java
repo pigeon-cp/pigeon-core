@@ -75,6 +75,21 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param params 模板参数
      */
     public Message initMessage(String sender, User user, Object params) throws MessageRepo.CreateMessageException {
+        return messageRepo.create(initMessageInMemory(sender, user, params));
+    }
+
+    /**
+     * <pre>
+     * 使用当前模板创建出一条新的仅存在于内存中的待发送消息数据对象
+     *
+     * 例如在大规模、批量创建消息时你可以使用此方法先将数据存储在内存中，然后再通过批量插入到 DB 以提高性能
+     * </pre>
+     *
+     * @param sender 发送人地址
+     * @param user   消息目标用户
+     * @param params 模板参数
+     */
+    public MessageDO initMessageInMemory(String sender, User user, Object params) {
         MessageTemplateDO data = this.data();
         MessageDO o = new MessageDO();
         o.setType(this.getMessageType());
@@ -95,7 +110,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         o.setContent(rule.resolve(data.getContent(), o.getParams()));
 
         o.setTag(data.getTag());
-        return messageRepo.create(o);
+        return o;
     }
 
     /**
