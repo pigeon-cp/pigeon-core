@@ -8,6 +8,7 @@ import com.github.taccisum.pigeon.core.dao.MassTacticDAO;
 import com.github.taccisum.pigeon.core.dao.MessageMassDAO;
 import com.github.taccisum.pigeon.core.data.MassTacticDO;
 import com.github.taccisum.pigeon.core.data.MessageMassDO;
+import com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass;
 import com.github.taccisum.pigeon.core.repo.MessageMassRepo;
 import com.github.taccisum.pigeon.core.repo.MessageTemplateRepo;
 import com.github.taccisum.pigeon.core.service.TransactionWrapper;
@@ -17,12 +18,16 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import static com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass.SUB_MASS_SIZE;
 
@@ -100,6 +105,41 @@ public abstract class MassTactic extends Entity.Base<Long> {
         } catch (PrepareException | MessageMass.DeliverException e) {
             throw new ExecException(e);
         }
+    }
+
+    /**
+     * 异步执行此策略
+     */
+    public final CompletableFuture<MessageMass> execAsync() throws ExecException {
+        MassTacticDO data = this.data();
+        if (Boolean.TRUE.equals(data.getMustTest())) {
+            if (!Boolean.TRUE.equals(data.getHasTest())) {
+                throw new ExecException("群发策略 %d 必须先通过测试才能执行", this.id());
+            }
+        }
+
+        // TODO:: 单独创建的实体都是没有经过 aop 的，这样执行是否存在事务？表示怀疑
+        return CompletableFuture.supplyAsync(() -> {
+            // 后续可能存在并行操作，依赖于创建 mass 的事务提交，因此需要单独执行
+            return this.newBoostMass();
+        }).thenApplyAsync(mass -> {
+            // prepare & deliver 异步执行，不阻塞调用方获取 mass
+            CompletableFuture.runAsync(() -> {
+                if (mass instanceof PartitionMessageMass) {
+                    ((PartitionMessageMass) mass).prepare(true);
+                } else {
+                    mass.prepare();
+                }
+            }).thenRunAsync(() -> {
+                if (mass instanceof PartitionMessageMass) {
+                    ((PartitionMessageMass) mass).deliver(true);
+                } else {
+                    mass.deliver();
+                }
+            });
+
+            return mass;
+        });
     }
 
     public final MessageMass prepare() throws PrepareException {

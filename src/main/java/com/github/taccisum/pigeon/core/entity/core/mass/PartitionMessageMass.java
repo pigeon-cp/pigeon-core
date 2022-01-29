@@ -2,9 +2,11 @@ package com.github.taccisum.pigeon.core.entity.core.mass;
 
 import com.github.taccisum.pigeon.core.entity.core.PartitionCapable;
 import com.github.taccisum.pigeon.core.entity.core.SubMass;
+import com.github.taccisum.pigeon.core.service.TransactionWrapper;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 
+import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -15,7 +17,7 @@ import java.util.stream.Collectors;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.2
  */
-public abstract class PartitionMessageMass extends AbstractMessageMass implements PartitionCapable {
+public class PartitionMessageMass extends AbstractMessageMass implements PartitionCapable {
     /**
      * 子集大小
      */
@@ -27,6 +29,13 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
 
     @Override
     public void prepare() {
+        prepare(false);
+    }
+
+    /**
+     * @param parallel 是否并发执行
+     */
+    public void prepare(boolean parallel) {
         StopWatch sw = new StopWatch();
         sw.start();
         List<SubMass> partitions = this.partition();
@@ -34,21 +43,50 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
         log.debug("消息集 {} 切片结果：size {}，耗时 {}ms", this.id(), partitions.size(), sw.getLastTaskTimeMillis());
 
         sw.start();
-        partitions
-                .stream()
-                .forEach(SubMass::prepare);
+        if (parallel) {
+            // TODO:: 事务问题
+            partitions.parallelStream()
+                    .forEach(SubMass::prepare);
+        } else {
+            partitions.forEach(SubMass::prepare);
+        }
         sw.stop();
         log.debug("所有切片子集均已 Prepared，耗时 {}ms，标记主消息集 {} 状态为 Prepared", sw.getLastTaskTimeMillis(), this.id());
         this.markPrepared();
     }
 
     @Override
+    public void deliver() throws DeliverException {
+        deliver(false);
+    }
+
+    public void deliver(boolean parallel) throws DeliverException {
+        // TODO:: duplicated code
+        this.updateStatus(Status.DELIVERING);
+        this.publish(new StartDeliverEvent());
+        if (this.size() <= 0) {
+            log.warn("消息集 {} size 为 0，无需进行任何分发操作", this.id());
+            this.markDeliveredAndPublicEvent();
+        } else {
+            this.doDeliver(parallel);
+        }
+    }
+
+    @Override
     protected void doDeliver() throws DeliverException {
+        doDeliver(false);
+    }
+
+    protected void doDeliver(boolean parallel) throws DeliverException {
         StopWatch sw = new StopWatch();
 
         // 分片进行投递
         sw.start();
-        this.partition().forEach(SubMass::deliver);
+        if (parallel) {
+            this.partition().parallelStream().forEach(SubMass::deliver);
+        } else {
+            this.partition().forEach(SubMass::deliver);
+        }
         sw.stop();
         log.debug("消息集 {} 分发完成，总耗时 {}ms", this.id(), sw.getLastTaskTimeMillis());
     }

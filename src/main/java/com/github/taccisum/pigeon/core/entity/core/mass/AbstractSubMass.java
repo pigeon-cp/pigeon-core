@@ -17,6 +17,8 @@ import org.springframework.util.StopWatch;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 /**
@@ -64,19 +66,27 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
 
             this.updateStatus(Status.DELIVERING);
             sw.start();
-            failCount = messages.parallelStream()
-                    .map(message -> {
-                        try {
-                            message.deliver();
-                            return true;
-                        } catch (Exception e) {
-                            log.error(String.format("消息 %d 发送失败", message.id()), e);
-                            return false;
-                        }
-                    })
-                    .map(success -> !success ? 1 : 0)
-                    .reduce(Integer::sum)
-                    .orElse(0);
+            ForkJoinPool poll = new ForkJoinPool();
+            try {
+                failCount = poll.submit(
+                        () -> messages.parallelStream()
+                                .map(message -> {
+                                    try {
+                                        message.deliver();
+                                        return true;
+                                    } catch (Exception e) {
+                                        log.error(String.format("消息 %d 发送失败", message.id()), e);
+                                        return false;
+                                    }
+                                })
+                                .map(success -> !success ? 1 : 0)
+                                .reduce(Integer::sum)
+                                .orElse(0)
+                ).get();
+            } catch (InterruptedException | ExecutionException e) {
+                // TODO::
+                e.printStackTrace();
+            }
             sw.stop();
             log.debug("子集 {} 分发完成，消息总数 {}，失败数量 {}，总耗时 {}ms", this.id(), messages.size(), failCount, sw.getLastTaskTimeMillis());
         } finally {

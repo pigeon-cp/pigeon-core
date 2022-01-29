@@ -4,7 +4,7 @@ import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.pigeon.core.entity.core.*;
 import com.github.taccisum.pigeon.core.entity.core.mass.AbstractMessageMass;
 import com.github.taccisum.pigeon.core.entity.core.mass.AbstractSubMass;
-import com.github.taccisum.pigeon.core.entity.core.mass.AsyncPartitionMessageMass;
+import com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass;
 import com.github.taccisum.pigeon.core.repo.factory.*;
 import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +70,7 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     public MessageMass createMessageMass(Long id, String type) {
         switch (type) {
             case "PARTITION":
-                return new AsyncPartitionMessageMass(id);
+                return new PartitionMessageMass(id);
             case "DEFAULT":
             default:
                 return new AbstractMessageMass.Default(id);

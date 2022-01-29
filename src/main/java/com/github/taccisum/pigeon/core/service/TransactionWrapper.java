@@ -25,6 +25,11 @@ public class TransactionWrapper {
         run.run();
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public <T> T submitNew(Supplier<T> supplier) {
+        return supplier.get();
+    }
+
     /**
      * 在 {@link Propagation#NESTED} 传播行为中执行此动作
      *
