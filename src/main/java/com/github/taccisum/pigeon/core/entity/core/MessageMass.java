@@ -114,13 +114,11 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
     }
 
     class StartDeliverEvent extends Event.Base<MessageMass> {
-        public StartDeliverEvent() {
-        }
     }
 
-    /**
-     * 消息集分发异常
-     */
+    class PreparedEvent extends Event.Base<MessageMass> {
+    }
+
     class DeliverException extends DomainException {
         public DeliverException(String message) {
             super(message);
@@ -129,5 +127,6 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
         public DeliverException(String message, Object... args) {
             super(message, args);
         }
+
     }
 }

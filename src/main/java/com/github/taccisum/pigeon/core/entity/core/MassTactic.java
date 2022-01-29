@@ -2,6 +2,7 @@ package com.github.taccisum.pigeon.core.entity.core;
 
 import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
+import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.domain.core.exception.DataErrorException;
 import com.github.taccisum.pigeon.core.dao.MassTacticDAO;
 import com.github.taccisum.pigeon.core.dao.MessageMassDAO;
@@ -16,6 +17,8 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
@@ -182,6 +185,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
         o.setId(this.id());
         o.setPreparedMassId(mass.getId());
         o.setStatus(Status.PREPARED);
+        this.publish(new PreparedEvent());
         this.dao.updateById(o);
     }
 
@@ -344,6 +348,9 @@ public abstract class MassTactic extends Entity.Base<Long> {
         URL
     }
 
+    public static class PreparedEvent extends Event.Base<MassTactic> {
+    }
+
     /**
      * 策略执行异常
      */
@@ -387,4 +394,5 @@ public abstract class MassTactic extends Entity.Base<Long> {
             super(id);
         }
     }
+
 }
