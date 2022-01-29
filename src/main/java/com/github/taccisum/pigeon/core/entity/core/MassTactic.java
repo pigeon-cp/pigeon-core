@@ -17,8 +17,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
@@ -66,6 +64,8 @@ public abstract class MassTactic extends Entity.Base<Long> {
 
     /**
      * 执行此策略
+     *
+     * @param boost 是否加速分发（例如切片并行操作）
      */
     public final MessageMass exec(boolean boost) throws ExecException {
         if (this.getSourceSize() > SUB_MASS_SIZE) {
