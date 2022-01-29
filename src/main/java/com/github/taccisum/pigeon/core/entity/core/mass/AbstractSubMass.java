@@ -50,6 +50,7 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
 
     @Override
     public void deliver() {
+        StopWatch sw = new StopWatch();
         int failCount = 0;
         try {
             List<Message> messages = this.listAllMessages();
@@ -62,6 +63,7 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
             }
 
             this.updateStatus(Status.DELIVERING);
+            sw.start();
             failCount = messages.parallelStream()
                     .map(message -> {
                         try {
@@ -75,6 +77,8 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
                     .map(success -> !success ? 1 : 0)
                     .reduce(Integer::sum)
                     .orElse(0);
+            sw.stop();
+            log.debug("子集 {} 分发完成，消息总数 {}，失败数量 {}，总耗时 {}ms", this.id(), messages.size(), failCount, sw.getLastTaskTimeMillis());
         } finally {
             this.updateStatus(Status.DELIVERED);
             PartitionMessageMass mass = this.getMain();

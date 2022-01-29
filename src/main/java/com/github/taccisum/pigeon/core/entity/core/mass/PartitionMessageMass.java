@@ -44,8 +44,13 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
 
     @Override
     protected void doDeliver() throws DeliverException {
+        StopWatch sw = new StopWatch();
+
         // 分片进行投递
+        sw.start();
         this.partition().forEach(SubMass::deliver);
+        sw.stop();
+        log.debug("消息集 {} 分发完成，总耗时 {}ms", this.id(), sw.getLastTaskTimeMillis());
     }
 
     /**
@@ -121,8 +126,12 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
         PartitionMessageMass.DeliverProcess process = this.getProcess();
         if (process.isFinished()) {
             if (this.data().getStatus() != Status.ALL_DELIVERED) {
-                log.info("消息集合 {} 的所有子集均已处理完毕，修改状态并发布事件", this.id());
+                Date startTime = process.getStartTime();
+                log.debug("检测到消息集合 {} 的所有子集均已处理完毕（起始时间：{}，总耗时 {}ms），修改状态并发布事件",
+                        this.id(), startTime, System.currentTimeMillis() - startTime.getTime());
                 this.markDeliveredAndPublicEvent();
+            } else {
+                log.warn("消息集合状态为 {}，请勿重复操作", Status.ALL_DELIVERED);
             }
         }
     }
@@ -146,6 +155,11 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
 
     public interface DeliverProcess {
         /**
+         * 获取起始时间
+         */
+        Date getStartTime();
+
+        /**
          * 进度 +1
          */
         void increase();
@@ -158,14 +172,21 @@ public abstract class PartitionMessageMass extends AbstractMessageMass implement
         class Local implements DeliverProcess {
             private static final Map<Long, Local> PROCESSES = new HashMap();
 
+            private Date startTime;
             private long massId;
             private AtomicInteger finishedSubMassCount;
             private int totalSubMassCount;
 
             public Local(long massId, int totalSubMassCount) {
+                this.startTime = new Date();
                 this.massId = massId;
                 this.finishedSubMassCount = new AtomicInteger();
                 this.totalSubMassCount = totalSubMassCount;
+            }
+
+            @Override
+            public Date getStartTime() {
+                return startTime;
             }
 
             @Override
