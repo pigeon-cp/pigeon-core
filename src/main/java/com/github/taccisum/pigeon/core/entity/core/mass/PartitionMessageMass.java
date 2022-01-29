@@ -2,11 +2,9 @@ package com.github.taccisum.pigeon.core.entity.core.mass;
 
 import com.github.taccisum.pigeon.core.entity.core.PartitionCapable;
 import com.github.taccisum.pigeon.core.entity.core.SubMass;
-import com.github.taccisum.pigeon.core.service.TransactionWrapper;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
