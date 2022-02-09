@@ -44,7 +44,13 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
         if (parallel) {
             // TODO:: 事务问题
             partitions.parallelStream()
-                    .forEach(SubMass::prepare);
+                    .forEach(sub -> {
+                        try {
+                            sub.prepare();
+                        } catch (Exception e) {
+                            log.error(String.format("sub mass %d prepare 发生错误", sub.id()), e);
+                        }
+                    });
         } else {
             partitions.forEach(SubMass::prepare);
         }

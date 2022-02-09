@@ -78,6 +78,10 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         return messageRepo.create(initMessageInMemory(sender, user, params));
     }
 
+    public MessageDO initMessageInMemory(String sender, String target, Object params) {
+        return this.initMessageInMemory(sender, new User.Dummy(target), params);
+    }
+
     /**
      * <pre>
      * 使用当前模板创建出一条新的仅存在于内存中的待发送消息数据对象

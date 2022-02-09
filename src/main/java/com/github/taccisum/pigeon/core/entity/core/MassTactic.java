@@ -18,8 +18,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
@@ -27,7 +25,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 import static com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass.SUB_MASS_SIZE;
 
@@ -78,6 +75,10 @@ public abstract class MassTactic extends Entity.Base<Long> {
             boost = true;
         }
 
+        if (this.getSourceSize() > 1000) {
+            throw new ExecException("数据量过大，需使用异步执行");
+        }
+
         MassTacticDO data = this.data();
         if (Boolean.TRUE.equals(data.getMustTest())) {
             if (!Boolean.TRUE.equals(data.getHasTest())) {
@@ -118,11 +119,25 @@ public abstract class MassTactic extends Entity.Base<Long> {
             }
         }
 
-        // TODO:: 单独创建的实体都是没有经过 aop 的，这样执行是否存在事务？表示怀疑
-        return CompletableFuture.supplyAsync(() -> {
-            // 后续可能存在并行操作，依赖于创建 mass 的事务提交，因此需要单独执行
-            return this.newBoostMass();
-        }).thenApplyAsync(mass -> {
+        if (this.isExecuting()) {
+            throw new PrepareException("策略 %d 目前正在执行，请勿重复操作", this.id());
+        }
+
+        CompletableFuture<MessageMass> async;
+        if (this.hasPrepared()) {
+            async = CompletableFuture.supplyAsync(() -> {
+                return this.getPreparedMass()
+                        .orElseThrow(() -> new DataErrorException("群发策略", this.id(), "hasPrepared 但消息集不存在"));
+            });
+        } else {
+            async = CompletableFuture.supplyAsync(() -> {
+                // 后续可能存在并行操作，依赖于创建 mass 的事务提交，因此需要单独执行
+                return this.newBoostMass();
+            });
+        }
+
+        // TODO:: 单独创建的实体都是没有经过 aop 的，这样执行是否存在事务？表示怀疑。另外要确认无事务是否会导致问题
+        return async.thenApplyAsync(mass -> {
             // prepare & deliver 异步执行，不阻塞调用方获取 mass
             CompletableFuture.runAsync(() -> {
                 if (mass instanceof PartitionMessageMass) {

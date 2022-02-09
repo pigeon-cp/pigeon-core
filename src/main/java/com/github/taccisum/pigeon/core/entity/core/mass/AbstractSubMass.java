@@ -4,6 +4,7 @@ import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.exception.DataErrorException;
 import com.github.taccisum.pigeon.core.dao.MessageDAO;
 import com.github.taccisum.pigeon.core.dao.SubMassDAO;
+import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.data.SubMassDO;
 import com.github.taccisum.pigeon.core.entity.core.*;
 import com.github.taccisum.pigeon.core.repo.MessageMassRepo;
@@ -121,7 +122,6 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
         PartitionMessageMass main = this.getMain();
         MassTactic tactic = main.getTactic().orElseThrow(() -> new DataErrorException("消息子集", this.id(), "关联策略不存在"));
         MessageTemplate template = tactic.getMessageTemplate();
-        List<Message> messages = new ArrayList<>();
         SubMassDO data = this.data();
         StopWatch sw = new StopWatch();
 
@@ -132,22 +132,34 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
                 this.id(), infos.size(), data.getStart(), data.getEnd(), sw.getLastTaskTimeMillis());
 
         sw.start();
+        List<MessageDO> messages = new ArrayList<>();
         for (MessageInfo info : infos) {
             try {
+                MessageDO message;
                 if (info.getAccount() instanceof User) {
-                    messages.add(template.initMessage(info.getSender(), (User) info.getAccount(), info.getParams()));
+                    message = template.initMessageInMemory(info.getSender(), (User) info.getAccount(), info.getParams());
                 } else {
-                    messages.add(template.initMessage(info.getSender(), (String) info.getAccount(), info.getParams()));
+                    message = template.initMessageInMemory(info.getSender(), (String) info.getAccount(), info.getParams());
                 }
+                // TODO:: 初始值
+                message.setSender("pigeon");
+                message.setStatus(Message.Status.NOT_SEND);
+                message.setMassId(main.id());
+                message.setSubMassId(this.id());
+                messages.add(message);
             } catch (MessageRepo.CreateMessageException e) {
                 log.warn("发送至 {} 的消息（sub mass id: {}）创建失败：{}", info, this.id(), e.getMessage());
             }
         }
-        this.addAll(messages);
+        this.insertAllAndAdd(messages);
         sw.stop();
         log.debug("子集 {} 所有消息初始化完毕，总耗时 {}ms", this.id(), sw.getLastTaskTimeMillis());
 
         this.markPrepared();
+    }
+
+    private void insertAllAndAdd(List<MessageDO> messages) {
+        messageDAO.insertAll(messages);
     }
 
     private void addAll(List<Message> messages) {

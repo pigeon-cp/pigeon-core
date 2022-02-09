@@ -9,6 +9,11 @@ import java.util.List;
  * @since 0.1
  */
 public interface MessageDAO extends BaseDAO<MessageDO> {
+    /**
+     * 批量插入消息
+     */
+    void insertAll(List<MessageDO> messages);
+
     default void updateMassIdBatch(Long massId, List<Long> messageIds) {
         this.updateMassIdBatch(massId, null, messageIds);
     }
