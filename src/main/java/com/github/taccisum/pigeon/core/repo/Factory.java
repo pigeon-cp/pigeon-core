@@ -6,6 +6,8 @@ import com.github.taccisum.pigeon.core.entity.core.mass.AbstractMessageMass;
 import com.github.taccisum.pigeon.core.entity.core.mass.AbstractSubMass;
 import com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass;
 import com.github.taccisum.pigeon.core.repo.factory.*;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -92,11 +94,25 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     E create(ID id, C criteria, Class<F> type) {
         List<F> factories = pluginManager.getExtensions(type);
         // TODO:: should cache ordered result for perf optimization.
+        F factory = null;
         factories.sort(Comparator.comparingInt(EntityFactory::getOrder));
-        for (F factory : factories) {
-            if (factory.match(id, criteria)) {
-                return factory.create(id, criteria);
+        for (F f : factories) {
+            if (f.match(id, criteria)) {
+                factory = f;
+                break;
             }
+        }
+
+        Counter counter = Metrics.counter("entity.creation",
+                "via", "factory",
+                "class", type.getName(),
+                "delegate_class", factory == null ? "null" : factory.getClass().getName(),
+                "cache", "false"
+        );
+        counter.increment();
+
+        if (factory != null) {
+            return factory.create(id, criteria);
         }
 
         throw new UnsupportedOperationException(String.format("Not any factory matched(for id %s, criteria: %s. expected factory type: %s).", id, criteria, type.getSimpleName()));
