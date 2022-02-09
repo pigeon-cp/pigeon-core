@@ -78,6 +78,9 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         return messageRepo.create(initMessageInMemory(sender, user, params));
     }
 
+    /**
+     * @since 0.2
+     */
     public MessageDO initMessageInMemory(String sender, String target, Object params) {
         return this.initMessageInMemory(sender, new User.Dummy(target), params);
     }
@@ -92,6 +95,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param sender 发送人地址
      * @param user   消息目标用户
      * @param params 模板参数
+     * @since 0.2
      */
     public MessageDO initMessageInMemory(String sender, User user, Object params) {
         MessageTemplateDO data = this.data();

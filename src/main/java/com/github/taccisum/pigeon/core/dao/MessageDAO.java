@@ -11,6 +11,8 @@ import java.util.List;
 public interface MessageDAO extends BaseDAO<MessageDO> {
     /**
      * 批量插入消息
+     *
+     * @since 0.2
      */
     void insertAll(List<MessageDO> messages);
 
