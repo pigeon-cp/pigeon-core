@@ -86,22 +86,14 @@ public abstract class MassTactic extends Entity.Base<Long> {
             }
         }
         try {
-            StopWatch sw = new StopWatch();
-
             // prepare
-            sw.start();
             MessageMass mass = this.prepare(boost);
-            sw.stop();
-            log.debug("策略 {} 执行 prepare 阶段完成，总耗时 {}ms", this.id(), sw.getLastTaskTimeMillis());
 
             // set status
             this.markExecuting();
 
             // deliver
-            sw.start();
             mass.deliver();
-            sw.stop();
-            log.debug("消息集 {} 分发完成，总耗时 {}ms", mass.id(), sw.getLastTaskTimeMillis());
             return mass;
         } catch (PrepareException | MessageMass.DeliverException e) {
             throw new ExecException(e);
@@ -140,10 +132,12 @@ public abstract class MassTactic extends Entity.Base<Long> {
         return async.thenApplyAsync(mass -> {
             // prepare & deliver 异步执行，不阻塞调用方获取 mass
             CompletableFuture.runAsync(() -> {
-                if (mass instanceof PartitionMessageMass) {
-                    ((PartitionMessageMass) mass).prepare(true);
-                } else {
-                    mass.prepare();
+                if (!mass.hasPrepared()) {
+                    if (mass instanceof PartitionMessageMass) {
+                        ((PartitionMessageMass) mass).prepare(true);
+                    } else {
+                        mass.prepare();
+                    }
                 }
             }).thenRunAsync(() -> {
                 if (mass instanceof PartitionMessageMass) {
@@ -162,7 +156,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     }
 
     /**
-     * 执行策略准备工作（在海量消息群发场景有助于降低发送时延）
+     * 执行策略准备工作（单独执行在海量消息群发场景有助于降低发送时延）
      *
      * @param boost 是否加速
      */
@@ -257,6 +251,9 @@ public abstract class MassTactic extends Entity.Base<Long> {
         return newMass(false);
     }
 
+    /**
+     * 创建一个 boost 消息集（仅支持正式发送）
+     */
     protected MessageMass newBoostMass() {
         MessageMassDO o = this.messageMassDAO.newEmptyDataObject();
         o.setTest(false);
@@ -449,5 +446,4 @@ public abstract class MassTactic extends Entity.Base<Long> {
             super(id);
         }
     }
-
 }

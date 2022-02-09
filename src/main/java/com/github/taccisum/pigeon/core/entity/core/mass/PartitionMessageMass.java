@@ -2,8 +2,10 @@ package com.github.taccisum.pigeon.core.entity.core.mass;
 
 import com.github.taccisum.pigeon.core.entity.core.PartitionCapable;
 import com.github.taccisum.pigeon.core.entity.core.SubMass;
+import com.github.taccisum.pigeon.core.utils.MagnitudeUtils;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StopWatch;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,6 +22,7 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
      * 子集大小
      */
     public static final int SUB_MASS_SIZE = 500;
+    private static final String TIMER_MASS_PREPARATION = "mass.preparation";
 
     public PartitionMessageMass(Long id) {
         super(id);
@@ -34,29 +37,31 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
      * @param parallel 是否并发执行
      */
     public void prepare(boolean parallel) {
-        StopWatch sw = new StopWatch();
-        sw.start();
-        List<SubMass> partitions = this.partition();
-        sw.stop();
-        log.debug("消息集 {} 切片结果：size {}，耗时 {}ms", this.id(), partitions.size(), sw.getLastTaskTimeMillis());
+        Timer timer = Timer.builder(TIMER_MASS_PREPARATION)
+                .description("消息集 prepare 耗费时间")
+                .tag("type", this.getClass().getName())
+                .tag("size", MagnitudeUtils.fromInt(this.data().getSize()).name())
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
 
-        sw.start();
-        if (parallel) {
-            // TODO:: 事务问题
-            partitions.parallelStream()
-                    .forEach(sub -> {
-                        try {
-                            sub.prepare();
-                        } catch (Exception e) {
-                            log.error(String.format("sub mass %d prepare 发生错误", sub.id()), e);
-                        }
-                    });
-        } else {
-            partitions.forEach(SubMass::prepare);
-        }
-        sw.stop();
-        log.debug("所有切片子集均已 Prepared，耗时 {}ms，标记主消息集 {} 状态为 Prepared", sw.getLastTaskTimeMillis(), this.id());
-        this.markPrepared();
+        timer.record(() -> {
+            List<SubMass> partitions = this.partition();
+
+            if (parallel) {
+                // TODO:: 事务问题
+                partitions.parallelStream()
+                        .forEach(sub -> {
+                            try {
+                                sub.prepare();
+                            } catch (Exception e) {
+                                log.error(String.format("sub mass %d prepare 发生错误", sub.id()), e);
+                            }
+                        });
+            } else {
+                partitions.forEach(SubMass::prepare);
+            }
+            this.markPrepared();
+        });
     }
 
     @Override
@@ -66,14 +71,25 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
 
     public void deliver(boolean parallel) throws DeliverException {
         // TODO:: duplicated code
-        this.updateStatus(Status.DELIVERING);
-        this.publish(new StartDeliverEvent());
-        if (this.size() <= 0) {
-            log.warn("消息集 {} size 为 0，无需进行任何分发操作", this.id());
-            this.markDeliveredAndPublicEvent();
-        } else {
-            this.doDeliver(parallel);
-        }
+        int size = this.size();
+        Timer timer = Timer.builder("mass.delivery")
+                .description("消息集投递（delivery）耗费时间")
+                .tag("type", this.getClass().getName())
+                .tag("size", MagnitudeUtils.fromInt(size).name())
+                .tag("parallel", parallel ? "TRUE" : "FALSE")
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
+
+        timer.record(() -> {
+            this.updateStatus(Status.DELIVERING);
+            this.publish(new StartDeliverEvent());
+            if (size <= 0) {
+                log.warn("消息集 {} size 为 0，无需进行任何分发操作", this.id());
+                this.markDeliveredAndPublicEvent();
+            } else {
+                this.doDeliver(parallel);
+            }
+        });
     }
 
     @Override
@@ -82,17 +98,12 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
     }
 
     protected void doDeliver(boolean parallel) throws DeliverException {
-        StopWatch sw = new StopWatch();
-
         // 分片进行投递
-        sw.start();
         if (parallel) {
             this.partition().parallelStream().forEach(SubMass::deliver);
         } else {
             this.partition().forEach(SubMass::deliver);
         }
-        sw.stop();
-        log.debug("消息集 {} 分发完成，总耗时 {}ms", this.id(), sw.getLastTaskTimeMillis());
     }
 
     /**

@@ -10,12 +10,15 @@ import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
 import com.github.taccisum.pigeon.core.repo.UserRepo;
 import com.github.taccisum.pigeon.core.utils.CSVUtils;
 import com.github.taccisum.pigeon.core.utils.JsonUtils;
+import com.github.taccisum.pigeon.core.utils.MagnitudeUtils;
 import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
 import com.github.taccisum.pigeon.core.valueobj.PlaceHolderRule;
 import com.github.taccisum.pigeon.core.valueobj.Source;
 import com.github.taccisum.pigeon.core.valueobj.rule.ph.Direct;
 import com.github.taccisum.pigeon.core.valueobj.rule.ph.SimpleIndex;
 import com.google.common.collect.Sets;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -180,27 +183,39 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      */
     public List<MessageInfo> resolve(Integer start, Integer end, Source source, MessageInfo def) {
         List<MessageInfo> targets = new ArrayList<>();
-        try {
-            CSVParser csv = CSVFormat.DEFAULT.builder()
-                    .setHeader().setSkipHeaderRecord(true)
-                    .build().parse(new BufferedReader(new InputStreamReader(source.getInputStream())));
-            for (CSVRecord row : csv) {
-                // 不计入 header，真正的 line num 应该 - 1
-                long lineNum = row.getRecordNumber() - 1;
-                if (lineNum >= start && lineNum < end) {
-                    MessageInfo target = this.map(row, def);
-                    if (target != null) {
-                        targets.add(target);
-                    } else {
-                        log.warn("第 {} 行： {} 解析失败", lineNum, row);
+        Timer timer = Timer.builder("template.source.resolve")
+                .description("通过模板解析目标源")
+                .tag("method", "CSV")
+                .tag("type", this.getClass().getName())
+                .tag("source.type", source.getClass().getName())
+                .tag("start", MagnitudeUtils.fromInt(start).name())
+                .tag("size", MagnitudeUtils.fromInt(end - start).name())
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
+
+        timer.record(() -> {
+            try {
+                CSVParser csv = CSVFormat.DEFAULT.builder()
+                        .setHeader().setSkipHeaderRecord(true)
+                        .build().parse(new BufferedReader(new InputStreamReader(source.getInputStream())));
+                for (CSVRecord row : csv) {
+                    // 不计入 header，真正的 line num 应该 - 1
+                    long lineNum = row.getRecordNumber() - 1;
+                    if (lineNum >= start && lineNum < end) {
+                        MessageInfo target = this.map(row, def);
+                        if (target != null) {
+                            targets.add(target);
+                        } else {
+                            log.warn("第 {} 行： {} 解析失败", lineNum, row);
+                        }
                     }
                 }
+            } catch (IOException e) {
+                throw new ResolveSourceException("解析目标源发生 I/O 异常", e);
+            } catch (Exception e) {
+                throw new ResolveSourceException("解析目标源发生错误", e);
             }
-        } catch (IOException e) {
-            throw new ResolveSourceException("解析目标源发生 I/O 异常", e);
-        } catch (Exception e) {
-            throw new ResolveSourceException("解析目标源发生错误", e);
-        }
+        });
         return targets;
     }
 

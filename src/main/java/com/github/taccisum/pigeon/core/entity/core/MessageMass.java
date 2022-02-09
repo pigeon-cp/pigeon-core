@@ -80,6 +80,11 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
     void prepare();
 
     /**
+     * 判断 mass 是否已 prepared
+     */
+    boolean hasPrepared();
+
+    /**
      * 消息集全部分发完成事件
      */
     class DeliveredEvent extends Event.Base<MessageMass> {

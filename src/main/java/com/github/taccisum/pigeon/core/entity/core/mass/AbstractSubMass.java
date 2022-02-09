@@ -9,11 +9,13 @@ import com.github.taccisum.pigeon.core.data.SubMassDO;
 import com.github.taccisum.pigeon.core.entity.core.*;
 import com.github.taccisum.pigeon.core.repo.MessageMassRepo;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
+import com.github.taccisum.pigeon.core.utils.MagnitudeUtils;
 import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -53,50 +55,56 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
 
     @Override
     public void deliver() {
-        StopWatch sw = new StopWatch();
-        int failCount = 0;
-        try {
-            List<Message> messages = this.listAllMessages();
-            if (CollectionUtils.isEmpty(messages)) {
-                log.warn("消息子集 {} size 为 {}，但实际消息数为 0，建议排查是否数据错误", this.id(), this.size());
-                return;
-            }
-            if (messages.size() != this.size()) {
-                log.warn("消息子集 {} size 与实际消息数 {} 不相同，建议排查是否数据错误", this.id(), messages.size());
-            }
+        int size = this.size();
+        Timer timer = Timer.builder("submass.delivery")
+                .description("消息子集投递（delivery）耗费时间")
+                .tag("type", this.getClass().getName())
+                .tag("size", MagnitudeUtils.fromInt(size).name())
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
 
-            this.updateStatus(Status.DELIVERING);
-            sw.start();
-            ForkJoinPool poll = new ForkJoinPool();
+        timer.record(() -> {
+            int failCount = 0;
             try {
-                failCount = poll.submit(
-                        () -> messages.parallelStream()
-                                .map(message -> {
-                                    try {
-                                        message.deliver();
-                                        return true;
-                                    } catch (Exception e) {
-                                        log.error(String.format("消息 %d 发送失败", message.id()), e);
-                                        return false;
-                                    }
-                                })
-                                .map(success -> !success ? 1 : 0)
-                                .reduce(Integer::sum)
-                                .orElse(0)
-                ).get();
-            } catch (InterruptedException | ExecutionException e) {
-                // TODO::
-                e.printStackTrace();
+                List<Message> messages = this.listAllMessages();
+                if (CollectionUtils.isEmpty(messages)) {
+                    log.warn("消息子集 {} size 为 {}，但实际消息数为 0，建议排查是否数据错误", this.id(), size);
+                    return;
+                }
+                if (messages.size() != size) {
+                    log.warn("消息子集 {} size 与实际消息数 {} 不相同，建议排查是否数据错误", this.id(), messages.size());
+                }
+
+                this.updateStatus(Status.DELIVERING);
+                ForkJoinPool poll = new ForkJoinPool();
+                try {
+                    failCount = poll.submit(
+                            () -> messages.parallelStream()
+                                    .map(message -> {
+                                        try {
+                                            message.deliver();
+                                            return true;
+                                        } catch (Exception e) {
+                                            log.error(String.format("消息 %d 发送失败", message.id()), e);
+                                            return false;
+                                        }
+                                    })
+                                    .map(success -> !success ? 1 : 0)
+                                    .reduce(Integer::sum)
+                                    .orElse(0)
+                    ).get();
+                } catch (InterruptedException | ExecutionException e) {
+                    // TODO::
+                    e.printStackTrace();
+                }
+            } finally {
+                this.updateStatus(Status.DELIVERED);
+                PartitionMessageMass mass = this.getMain();
+                PartitionMessageMass.DeliverProcess process = mass.getProcess();
+                process.increase();
+                this.publish(new DeliveredEvent(failCount));
             }
-            sw.stop();
-            log.debug("子集 {} 分发完成，消息总数 {}，失败数量 {}，总耗时 {}ms", this.id(), messages.size(), failCount, sw.getLastTaskTimeMillis());
-        } finally {
-            this.updateStatus(Status.DELIVERED);
-            PartitionMessageMass mass = this.getMain();
-            PartitionMessageMass.DeliverProcess process = mass.getProcess();
-            process.increase();
-            this.publish(new DeliveredEvent(failCount));
-        }
+        });
     }
 
     private void updateStatus(Status status) {
@@ -119,47 +127,52 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
 
     @Override
     public void prepare() {
-        PartitionMessageMass main = this.getMain();
-        MassTactic tactic = main.getTactic().orElseThrow(() -> new DataErrorException("消息子集", this.id(), "关联策略不存在"));
-        MessageTemplate template = tactic.getMessageTemplate();
         SubMassDO data = this.data();
-        StopWatch sw = new StopWatch();
 
-        sw.start();
-        List<MessageInfo> infos = tactic.listMessageInfos(data.getStart(), data.getEnd());
-        sw.stop();
-        log.debug("成功获取子集 {} 关联的消息源 size: {} (start: {}, end: {})，耗时 {}ms",
-                this.id(), infos.size(), data.getStart(), data.getEnd(), sw.getLastTaskTimeMillis());
+        Timer timer = Timer.builder("submass.preparation")
+                .description("消息子集 prepare 耗费时间")
+                .tag("type", this.getClass().getName())
+                .tag("size", MagnitudeUtils.fromInt(this.data().getSize()).name())
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
 
-        sw.start();
-        List<MessageDO> messages = new ArrayList<>();
-        for (MessageInfo info : infos) {
-            try {
-                MessageDO message;
-                if (info.getAccount() instanceof User) {
-                    message = template.initMessageInMemory(info.getSender(), (User) info.getAccount(), info.getParams());
-                } else {
-                    message = template.initMessageInMemory(info.getSender(), (String) info.getAccount(), info.getParams());
+        timer.record(() -> {
+            PartitionMessageMass main = this.getMain();
+            MassTactic tactic = main.getTactic().orElseThrow(() -> new DataErrorException("消息子集", this.id(), "关联策略不存在"));
+            MessageTemplate template = tactic.getMessageTemplate();
+            List<MessageDO> messages = new ArrayList<>();
+            for (MessageInfo info : tactic.listMessageInfos(data.getStart(), data.getEnd())) {
+                try {
+                    MessageDO message;
+                    if (info.getAccount() instanceof User) {
+                        message = template.initMessageInMemory(info.getSender(), (User) info.getAccount(), info.getParams());
+                    } else {
+                        message = template.initMessageInMemory(info.getSender(), (String) info.getAccount(), info.getParams());
+                    }
+                    // TODO:: 初始值
+                    message.setSender("pigeon");
+                    message.setStatus(Message.Status.NOT_SEND);
+                    message.setMassId(main.id());
+                    message.setSubMassId(this.id());
+                    messages.add(message);
+                } catch (MessageRepo.CreateMessageException e) {
+                    log.warn("发送至 {} 的消息（sub mass id: {}）创建失败：{}", info, this.id(), e.getMessage());
                 }
-                // TODO:: 初始值
-                message.setSender("pigeon");
-                message.setStatus(Message.Status.NOT_SEND);
-                message.setMassId(main.id());
-                message.setSubMassId(this.id());
-                messages.add(message);
-            } catch (MessageRepo.CreateMessageException e) {
-                log.warn("发送至 {} 的消息（sub mass id: {}）创建失败：{}", info, this.id(), e.getMessage());
             }
-        }
-        this.insertAllAndAdd(messages);
-        sw.stop();
-        log.debug("子集 {} 所有消息初始化完毕，总耗时 {}ms", this.id(), sw.getLastTaskTimeMillis());
+            this.insertAllAndAdd(messages);
 
-        this.markPrepared();
+            this.markPrepared();
+        });
     }
 
     private void insertAllAndAdd(List<MessageDO> messages) {
-        messageDAO.insertAll(messages);
+        Timer timer = Timer.builder("message.creation.batch")
+                .tag("size", MagnitudeUtils.fromInt(messages.size()).name())
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
+        timer.record(() -> {
+            messageDAO.insertAll(messages);
+        });
     }
 
     private void addAll(List<Message> messages) {

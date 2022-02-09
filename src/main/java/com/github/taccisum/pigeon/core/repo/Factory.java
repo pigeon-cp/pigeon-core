@@ -6,8 +6,8 @@ import com.github.taccisum.pigeon.core.entity.core.mass.AbstractMessageMass;
 import com.github.taccisum.pigeon.core.entity.core.mass.AbstractSubMass;
 import com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass;
 import com.github.taccisum.pigeon.core.repo.factory.*;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -94,28 +94,35 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     E create(ID id, C criteria, Class<F> type) {
         List<F> factories = pluginManager.getExtensions(type);
         // TODO:: should cache ordered result for perf optimization.
-        F factory = null;
+        F f0 = null;
         factories.sort(Comparator.comparingInt(EntityFactory::getOrder));
         for (F f : factories) {
             if (f.match(id, criteria)) {
-                factory = f;
+                f0 = f;
                 break;
             }
         }
 
-        Counter counter = Metrics.counter("entity.creation",
-                "via", "factory",
-                "class", type.getName(),
-                "delegate_class", factory == null ? "null" : factory.getClass().getName(),
-                "cache", "false"
-        );
-        counter.increment();
+        final F factory = f0;
 
-        if (factory != null) {
-            return factory.create(id, criteria);
-        }
+        Timer timer = Timer.builder("factory.entity.creation")
+                .description("工厂创建实体")
+                .tags(
+                        "via", "factory",
+                        "class", type.getName(),
+                        "delegate_class", factory == null ? "null" : factory.getClass().getName(),
+                        "cache", "false"
+                )
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
 
-        throw new UnsupportedOperationException(String.format("Not any factory matched(for id %s, criteria: %s. expected factory type: %s).", id, criteria, type.getSimpleName()));
+        return timer.record(() -> {
+            if (factory != null) {
+                return factory.create(id, criteria);
+            }
+
+            throw new UnsupportedOperationException(String.format("Not any factory matched(for id %s, criteria: %s. expected factory type: %s).", id, criteria, type.getSimpleName()));
+        });
     }
 
     public <ID extends Serializable, E extends CustomConcept<ID>, C, F extends CustomConceptFactory<ID, E, C>> E createExt(ID id, C criteria, Class<F> type) {

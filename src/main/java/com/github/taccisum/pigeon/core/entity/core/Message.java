@@ -9,6 +9,8 @@ import com.github.taccisum.pigeon.core.entity.core.sp.MessageServiceProvider;
 import com.github.taccisum.pigeon.core.repo.MessageTemplateRepo;
 import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
 import com.github.taccisum.pigeon.core.repo.ThirdAccountRepo;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,37 +53,48 @@ public abstract class Message extends Entity.Base<Long> {
      * @return 投递结果
      */
     public boolean deliver() {
+        MessageDO data = this.data();
         if (this.shouldRelateTemplate()) {
-            if (this.data().getTemplateId() == null) {
+            if (data.getTemplateId() == null) {
                 throw new DeliverException("消息 %d 必须关联模板", this.id());
             }
         }
 
-        boolean success = false;
-        String msg = null;
-        try {
-            this.doDelivery();
-            success = true;
-        } catch (DomainException e) {
-            log.warn(String.format("消息 %d 发送失败", this.id()), e);
-            msg = e.getMessage();
-        } catch (Exception e) {
-            log.error(String.format("消息 %d 发送时发生错误", this.id()), e);
-            msg = e.getMessage();
-        }
+        Timer timer = Timer.builder("message.delivery")
+                .description("消息投递（delivery）耗费时间")
+                .tag("class", this.getClass().getName())
+                .tag("type", data.getType())
+                .tag("sp", data.getSpType())
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
 
-        if (this.isRealTime()) {
-            log.debug("消息 {} 为实时消息，将直接标记发送结果", this.id());
-            if (msg != null) {
-                this.markSent(success, msg);
+        return timer.record(() -> {
+            boolean success = false;
+            String msg = null;
+            try {
+                this.doDelivery();
+                success = true;
+            } catch (DomainException e) {
+                log.warn(String.format("消息 %d 发送失败", this.id()), e);
+                msg = e.getMessage();
+            } catch (Exception e) {
+                log.error(String.format("消息 %d 发送时发生错误", this.id()), e);
+                msg = e.getMessage();
             }
-            this.markSent(success);
-        } else {
-            log.debug("消息 {} 为非实时消息，仅标记投递结果", this.id());
-            this.markDelivered(success, msg);
-        }
 
-        return success;
+            if (this.isRealTime()) {
+                log.debug("消息 {} 为实时消息，将直接标记发送结果", this.id());
+                if (msg != null) {
+                    this.markSent(success, msg);
+                }
+                this.markSent(success);
+            } else {
+                log.debug("消息 {} 为非实时消息，仅标记投递结果", this.id());
+                this.markDelivered(success, msg);
+            }
+
+            return success;
+        });
     }
 
     /**

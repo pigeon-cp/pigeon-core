@@ -9,6 +9,9 @@ import com.github.taccisum.pigeon.core.entity.core.*;
 import com.github.taccisum.pigeon.core.repo.MassTacticRepo;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.repo.SubMassRepo;
+import com.github.taccisum.pigeon.core.utils.MagnitudeUtils;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,15 +56,30 @@ public abstract class AbstractMessageMass extends Entity.Base<Long> implements M
     }
 
     @Override
+    public boolean hasPrepared() {
+        return !Status.CREATING.equals(this.data().getStatus());
+    }
+
+    @Override
     public void deliver() throws DeliverException {
-        this.updateStatus(Status.DELIVERING);
-        this.publish(new StartDeliverEvent());
-        if (this.size() <= 0) {
-            log.warn("消息集 {} size 为 0，无需进行任何分发操作", this.id());
-            this.markDeliveredAndPublicEvent();
-        } else {
-            this.doDeliver();
-        }
+        int size = this.size();
+        Timer timer = Timer.builder("mass.delivery")
+                .description("消息集投递（delivery）耗费时间")
+                .tag("type", this.getClass().getName())
+                .tag("size", MagnitudeUtils.fromInt(size).name())
+                .publishPercentiles(0.5, 0.95)
+                .register(Metrics.globalRegistry);
+
+        timer.record(() -> {
+            this.updateStatus(Status.DELIVERING);
+            this.publish(new StartDeliverEvent());
+            if (size <= 0) {
+                log.warn("消息集 {} size 为 0，无需进行任何分发操作", this.id());
+                this.markDeliveredAndPublicEvent();
+            } else {
+                this.doDeliver();
+            }
+        });
     }
 
     protected abstract void doDeliver() throws DeliverException;
