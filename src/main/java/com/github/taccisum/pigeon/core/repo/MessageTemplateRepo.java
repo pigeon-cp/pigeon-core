@@ -1,6 +1,7 @@
 package com.github.taccisum.pigeon.core.repo;
 
 import com.github.taccisum.domain.core.exception.DataNotFoundException;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.github.taccisum.pigeon.core.dao.MessageTemplateDAO;
 import com.github.taccisum.pigeon.core.data.MessageTemplateDO;
 import com.github.taccisum.pigeon.core.entity.core.MessageTemplate;
@@ -33,6 +34,7 @@ public class MessageTemplateRepo {
                 .orElseThrow(() -> new MessageTemplateNotFoundException(id));
     }
 
+    @ErrorCode(value = "TEMPLATE", inherited = true, description = "消息模板不存在")
     public static class MessageTemplateNotFoundException extends DataNotFoundException {
         public MessageTemplateNotFoundException(long id) {
             super("消息模板", id);

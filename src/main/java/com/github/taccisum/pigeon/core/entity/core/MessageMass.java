@@ -4,6 +4,7 @@ import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.domain.core.EventPublisher;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.github.taccisum.pigeon.core.data.MessageMassDO;
 
 import java.util.List;
@@ -124,6 +125,7 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
     class PreparedEvent extends Event.Base<MessageMass> {
     }
 
+    @ErrorCode(value = "MESSAGE_MASS_DELIVERY", description = "消息集投递")
     class DeliverException extends DomainException {
         public DeliverException(String message) {
             super(message);

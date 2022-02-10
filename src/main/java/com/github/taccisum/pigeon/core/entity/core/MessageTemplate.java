@@ -2,6 +2,7 @@ package com.github.taccisum.pigeon.core.entity.core;
 
 import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.github.taccisum.pigeon.core.dao.MessageTemplateDAO;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.data.MessageTemplateDO;
@@ -251,9 +252,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      */
     protected abstract String getAccountHeaderName();
 
-    /**
-     * 解析目标源异常
-     */
+    @ErrorCode(value = "RESOLVE_TARGET_SOURCE", description = "解析目标源失败")
     public static class ResolveSourceException extends DomainException {
         public ResolveSourceException(String message, Throwable cause) {
             super(message, cause);

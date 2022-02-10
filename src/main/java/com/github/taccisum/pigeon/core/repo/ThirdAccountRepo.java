@@ -1,8 +1,8 @@
 package com.github.taccisum.pigeon.core.repo;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.taccisum.domain.core.exception.DataErrorException;
 import com.github.taccisum.domain.core.exception.DataNotFoundException;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.github.taccisum.pigeon.core.dao.ThirdAccountDAO;
 import com.github.taccisum.pigeon.core.data.ThirdAccountDO;
 import com.github.taccisum.pigeon.core.entity.core.ThirdAccount;
@@ -43,6 +43,7 @@ public class ThirdAccountRepo {
         return Optional.of(factory.createThirdAccount(data.getId(), data.getUsername(), data.getSpType()));
     }
 
+    @ErrorCode(value = "THIRD_ACCOUNT", inherited = true, description = "三方账号不存在")
     public static class NotFoundException extends DataNotFoundException {
         public NotFoundException(long id, String sp) {
             super(String.format("三方账号 %d 不存在或不属于 %s", id, sp));

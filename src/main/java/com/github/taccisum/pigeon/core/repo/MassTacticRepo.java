@@ -1,6 +1,7 @@
 package com.github.taccisum.pigeon.core.repo;
 
 import com.github.taccisum.domain.core.exception.DataNotFoundException;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.github.taccisum.pigeon.core.dao.MassTacticDAO;
 import com.github.taccisum.pigeon.core.data.MassTacticDO;
 import com.github.taccisum.pigeon.core.entity.core.MassTactic;
@@ -43,6 +44,7 @@ public class MassTacticRepo {
                 .orElseThrow(() -> new NotFoundException(id));
     }
 
+    @ErrorCode(value = "TACTIC", inherited = true, description = "群发策略不存在")
     public static class NotFoundException extends DataNotFoundException {
         public NotFoundException(long id) {
             super("群发策略", id);

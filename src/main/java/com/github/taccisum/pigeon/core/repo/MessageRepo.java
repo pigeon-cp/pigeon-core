@@ -1,6 +1,7 @@
 package com.github.taccisum.pigeon.core.repo;
 
 import com.github.taccisum.domain.core.DomainException;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.github.taccisum.pigeon.core.dao.MessageDAO;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.Message;
@@ -99,6 +100,7 @@ public class MessageRepo {
     /**
      * 消息创建异常
      */
+    @ErrorCode(value = "MESSAGE_CREATION", description = "消息创建错误")
     public static class CreateMessageException extends DomainException {
         public CreateMessageException(String reason) {
             super("消息创建异常，原因：%s", reason);

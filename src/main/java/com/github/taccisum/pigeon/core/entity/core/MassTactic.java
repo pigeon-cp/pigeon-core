@@ -4,6 +4,7 @@ import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.domain.core.exception.DataErrorException;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.github.taccisum.pigeon.core.dao.MassTacticDAO;
 import com.github.taccisum.pigeon.core.dao.MessageMassDAO;
 import com.github.taccisum.pigeon.core.data.MassTacticDO;
@@ -18,7 +19,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
 import java.util.Date;
@@ -115,6 +115,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
             throw new ExecException("策略 %d 目前正在执行，请勿重复操作", this.id());
         }
 
+        this.markExecuting();
         CompletableFuture<MessageMass> async;
         if (this.hasPrepared()) {
             async = CompletableFuture.supplyAsync(() -> {
@@ -406,6 +407,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 策略执行异常
      */
+    @ErrorCode(value = "MASS_TACTIC_EXEC", description = "群发策略执行失败")
     public static class ExecException extends DomainException {
         public ExecException(String message, Object... args) {
             super(message, args);
@@ -423,6 +425,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 策略准备工作异常
      */
+    @ErrorCode(value = "MASS_TACTIC_PREPARE", description = "群发策略准备失败")
     public static class PrepareException extends DomainException {
         public PrepareException(String message, Object... args) {
             super(message, args);
@@ -432,6 +435,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 结束策略异常
      */
+    @ErrorCode(value = "MASS_TACTIC_END", description = "群发策略结束失败")
     public static class EndException extends DomainException {
         public EndException(String message, Object... args) {
             super(message, args);

@@ -3,6 +3,7 @@ package com.github.taccisum.pigeon.core.entity.core;
 import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.github.taccisum.pigeon.core.dao.MessageDAO;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.holder.MessageDelivererHolder;
@@ -289,6 +290,7 @@ public abstract class Message extends Entity.Base<Long> {
     /**
      * 消息分发异常
      */
+    @ErrorCode(value = "MESSAGE_DELIVERY", description = "消息投递")
     public static class DeliverException extends DomainException {
         public DeliverException(String message) {
             super(message);
