@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class Messages {
+    private static final ForkJoinPool POLL = new ForkJoinPool();
     /**
      * 消息元素
      */
@@ -127,9 +128,8 @@ public class Messages {
 //                    failCount =
         } else {
             log.warn("消息类型 {} 无合适的 Raw 消息分发器，无法执行批量发送，将回退到原始的逐条发送方式（注意：此方式性能极为低下！）", this.getType().getName());
-            ForkJoinPool poll = new ForkJoinPool();
             try {
-                lastDeliverFailCount = poll.submit(
+                lastDeliverFailCount = POLL.submit(
                         () -> messages.parallelStream()
                                 .map(message -> {
                                     try {

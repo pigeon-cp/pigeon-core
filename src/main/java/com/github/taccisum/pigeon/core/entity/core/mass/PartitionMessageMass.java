@@ -8,6 +8,7 @@ import io.micrometer.core.instrument.Timer;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -18,6 +19,8 @@ import java.util.stream.Collectors;
  * @since 0.2
  */
 public class PartitionMessageMass extends AbstractMessageMass implements PartitionCapable {
+    private static final ForkJoinPool POOL = new ForkJoinPool();
+
     /**
      * 子集大小
      */
@@ -45,18 +48,21 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
                 .register(Metrics.globalRegistry);
 
         timer.record(() -> {
+            // 先 partition，再并行执行，否则可能在并行线程中获取不到数据？
             List<SubMass> partitions = this.partition();
 
             if (parallel) {
                 // TODO:: 事务问题
-                partitions.parallelStream()
-                        .forEach(sub -> {
-                            try {
-                                sub.prepare();
-                            } catch (Exception e) {
-                                log.error(String.format("sub mass %d prepare 发生错误", sub.id()), e);
-                            }
-                        });
+                POOL.submit(() -> {
+                    partitions.parallelStream()
+                            .forEach(sub -> {
+                                try {
+                                    sub.prepare();
+                                } catch (Exception e) {
+                                    log.error(String.format("sub mass %d prepare 发生错误", sub.id()), e);
+                                }
+                            });
+                });
             } else {
                 partitions.forEach(SubMass::prepare);
             }
@@ -100,7 +106,9 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
     protected void doDeliver(boolean parallel) throws DeliverException {
         // 分片进行投递
         if (parallel) {
-            this.partition().parallelStream().forEach(SubMass::deliver);
+            POOL.submit(() -> {
+                this.partition().parallelStream().forEach(SubMass::deliver);
+            });
         } else {
             this.partition().forEach(SubMass::deliver);
         }
