@@ -27,7 +27,20 @@ public interface MessageDAO extends BaseDAO<MessageDO> {
      * @param subMassId  sub mass id
      * @param messageIds 消息 id
      */
-    void updateMassIdBatch(Long massId, Long subMassId, List<Long> messageIds);
+    default void updateMassIdBatch(Long massId, Long subMassId, List<Long> messageIds) {
+        MessageDO o = newEmptyDataObject();
+        o.setMassId(massId);
+        o.setSubMassId(subMassId);
+        this.updateBatchByIdList(o, messageIds);
+    }
+
+
+    /**
+     * 根据消息 id 批量更新数据
+     *
+     * @since 0.2
+     */
+    void updateBatchByIdList(MessageDO o, List<Long> messageIds);
 
     /**
      * 根据 mass id 查找所有消息

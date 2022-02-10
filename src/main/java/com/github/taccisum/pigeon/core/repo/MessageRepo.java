@@ -88,7 +88,11 @@ public class MessageRepo {
         }
         return ls
                 .stream()
-                .map(data -> factory.createMessage(data.getId(), data.getType(), data.getSpType()))
+                .map(data -> {
+                    Message message = factory.createMessage(data.getId(), data.getType(), data.getSpType());
+                    message.setData(data);
+                    return message;
+                })
                 .collect(Collectors.toList());
     }
 

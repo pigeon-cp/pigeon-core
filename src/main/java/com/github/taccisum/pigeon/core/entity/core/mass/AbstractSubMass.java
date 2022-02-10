@@ -11,17 +11,15 @@ import com.github.taccisum.pigeon.core.repo.MessageMassRepo;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.utils.MagnitudeUtils;
 import com.github.taccisum.pigeon.core.valueobj.MessageInfo;
+import com.github.taccisum.pigeon.core.valueobj.Messages;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 /**
@@ -66,37 +64,21 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
         timer.record(() -> {
             int failCount = 0;
             try {
-                List<Message> messages = this.listAllMessages();
-                if (CollectionUtils.isEmpty(messages)) {
+                this.updateStatus(Status.DELIVERING);
+
+                Messages messages = new Messages(this.listAllMessages());
+
+                if (messages.isEmpty()) {
                     log.warn("消息子集 {} size 为 {}，但实际消息数为 0，建议排查是否数据错误", this.id(), size);
                     return;
                 }
+
                 if (messages.size() != size) {
                     log.warn("消息子集 {} size 与实际消息数 {} 不相同，建议排查是否数据错误", this.id(), messages.size());
                 }
 
-                this.updateStatus(Status.DELIVERING);
-                ForkJoinPool poll = new ForkJoinPool();
-                try {
-                    failCount = poll.submit(
-                            () -> messages.parallelStream()
-                                    .map(message -> {
-                                        try {
-                                            message.deliver();
-                                            return true;
-                                        } catch (Exception e) {
-                                            log.error(String.format("消息 %d 发送失败", message.id()), e);
-                                            return false;
-                                        }
-                                    })
-                                    .map(success -> !success ? 1 : 0)
-                                    .reduce(Integer::sum)
-                                    .orElse(0)
-                    ).get();
-                } catch (InterruptedException | ExecutionException e) {
-                    // TODO::
-                    e.printStackTrace();
-                }
+                messages.deliver();
+                failCount = messages.getLastDeliverFailCount();
             } finally {
                 this.updateStatus(Status.DELIVERED);
                 PartitionMessageMass mass = this.getMain();

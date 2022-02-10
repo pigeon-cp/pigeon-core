@@ -5,6 +5,7 @@ import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.pigeon.core.dao.MessageDAO;
 import com.github.taccisum.pigeon.core.data.MessageDO;
+import com.github.taccisum.pigeon.core.entity.core.holder.MessageDelivererHolder;
 import com.github.taccisum.pigeon.core.entity.core.sp.MessageServiceProvider;
 import com.github.taccisum.pigeon.core.repo.MessageTemplateRepo;
 import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
@@ -12,6 +13,8 @@ import com.github.taccisum.pigeon.core.repo.ThirdAccountRepo;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +27,8 @@ import javax.annotation.Resource;
  * @since 0.1
  */
 public abstract class Message extends Entity.Base<Long> {
+    @Setter
+    private MessageDO data;
     public static final String DEFAULT_SENDER = "pigeon";
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -39,7 +44,10 @@ public abstract class Message extends Entity.Base<Long> {
     }
 
     public MessageDO data() {
-        return this.dao.selectById(this.id());
+        if (data == null) {
+            return this.dao.selectById(this.id());
+        }
+        return data;
     }
 
     /**
@@ -120,7 +128,12 @@ public abstract class Message extends Entity.Base<Long> {
     /**
      * 执行消息投递的具体逻辑
      */
-    protected abstract void doDelivery() throws Exception;
+    protected void doDelivery() throws Exception {
+        if (this instanceof MessageDelivererHolder) {
+            ((MessageDelivererHolder) this).getMessageDeliverer().deliver(this.data());
+        }
+        throw new NotImplementedException("You should impl #doDelivery by yourself if relative message sender could not be found.");
+    }
 
     /**
      * 获取此消息关联的服务提供商

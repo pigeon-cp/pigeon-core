@@ -10,8 +10,8 @@ import com.github.taccisum.pigeon.core.repo.MassTacticRepo;
 import com.github.taccisum.pigeon.core.repo.MessageRepo;
 import com.github.taccisum.pigeon.core.repo.SubMassRepo;
 import com.github.taccisum.pigeon.core.utils.MagnitudeUtils;
+import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Timer;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +63,7 @@ public abstract class AbstractMessageMass extends Entity.Base<Long> implements M
     @Override
     public void deliver() throws DeliverException {
         int size = this.size();
-        Timer timer = Timer.builder("mass.delivery")
+        LongTaskTimer timer = LongTaskTimer.builder("mass.delivery")
                 .description("消息集投递（delivery）耗费时间")
                 .tag("type", this.getClass().getName())
                 .tag("size", MagnitudeUtils.fromInt(size).name())
