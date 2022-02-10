@@ -112,7 +112,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
         }
 
         if (this.isExecuting()) {
-            throw new PrepareException("策略 %d 目前正在执行，请勿重复操作", this.id());
+            throw new ExecException("策略 %d 目前正在执行，请勿重复操作", this.id());
         }
 
         CompletableFuture<MessageMass> async;
