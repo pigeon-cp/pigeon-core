@@ -115,7 +115,6 @@ public abstract class MassTactic extends Entity.Base<Long> {
             throw new ExecException("策略 %d 目前正在执行，请勿重复操作", this.id());
         }
 
-        this.markExecuting();
         CompletableFuture<MessageMass> async;
         if (this.hasPrepared()) {
             async = CompletableFuture.supplyAsync(() -> {
@@ -141,6 +140,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
                     }
                 }
             }).thenRunAsync(() -> {
+                this.markExecuting();
                 if (mass instanceof PartitionMessageMass) {
                     ((PartitionMessageMass) mass).deliver(true);
                 } else {
