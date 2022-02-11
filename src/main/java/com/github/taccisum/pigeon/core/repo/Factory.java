@@ -2,9 +2,7 @@ package com.github.taccisum.pigeon.core.repo;
 
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.pigeon.core.entity.core.*;
-import com.github.taccisum.pigeon.core.entity.core.mass.AbstractMessageMass;
 import com.github.taccisum.pigeon.core.entity.core.mass.AbstractSubMass;
-import com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass;
 import com.github.taccisum.pigeon.core.repo.factory.*;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
@@ -69,14 +67,21 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         return this.create(id, new MassTacticFactory.Criteria(type), MassTacticFactory.class);
     }
 
+    /**
+     * @deprecated {@link #createMessageMass(Long, String, String, String)}
+     */
     public MessageMass createMessageMass(Long id, String type) {
-        switch (type) {
-            case "PARTITION":
-                return new PartitionMessageMass(id);
-            case "DEFAULT":
-            default:
-                return new AbstractMessageMass.Default(id);
-        }
+        return this.createMessageMass(id, type, null, null);
+    }
+
+    public MessageMass createMessageMass(Long id, String type, String spType, String messageType) {
+        return this.create(
+                id,
+                new MessageMassFactory.Criteria()
+                        .setType(type)
+                        .setSpType(spType)
+                        .setMessageType(messageType),
+                MessageMassFactory.class);
     }
 
     public SubMass createSubMessageMass(Long id) {

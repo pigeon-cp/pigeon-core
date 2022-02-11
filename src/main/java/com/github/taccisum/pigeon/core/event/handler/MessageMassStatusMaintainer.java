@@ -21,8 +21,13 @@ public class MessageMassStatusMaintainer implements DomainEventSubscriber {
         MessageMass mass = sub.getMain();
 
         if (mass instanceof PartitionMessageMass) {
+            PartitionMessageMass pmass = (PartitionMessageMass) mass;
+            // TODO:: 应有幂等处理，避免多次收到事件导致进度异常
+            // 进度 +1
+            PartitionMessageMass.DeliverProcess process = pmass.getProcess();
+            process.increase();
             log.debug("消息子集合 {} 分发完毕，将根据结果对主集合 {} 状态进行变更", sub.id(), mass.id());
-            ((PartitionMessageMass) mass).markPartDelivered(sub, e.getFailCount());
+            pmass.markPartDelivered(sub, e.getFailCount());
         } else {
             log.warn("消息子集合 {} 所属主集合 {} 非分片集合，请检查数据是否异常", sub.id(), mass.id());
         }

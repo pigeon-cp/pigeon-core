@@ -1,14 +1,12 @@
 package com.github.taccisum.pigeon.core.entity.core;
 
-import com.github.taccisum.domain.core.Event;
-import com.github.taccisum.domain.core.EventPublisher;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 
 import java.util.List;
 
 /**
  * <pre>
- * Raw 消息分发器
+ * {@link MessageMass} 专用 Raw 消息分发器
  *
  * 区别于消息本身的分发能力 {@link Message#deliver()}，此分发器将直接对批
  * 量的原始数据（{@link MessageDO}）进行操作，由此避免逐条处理时
@@ -16,48 +14,26 @@ import java.util.List;
  * </pre>
  *
  * @author taccisum - liaojinfeng6938@dingtalk.com
+ * @see MessageMass
  * @since 0.2
  */
-public interface RawMessageDeliverer extends EventPublisher {
+public interface RawMessageDeliverer {
     /**
      * 投递消息
+     *
+     * @return delivery id
      */
-    void deliver(MessageDO message);
+    String deliver(MessageDO message);
 
     /**
-     * 批量投递消息，通过简单的 for 循环实现
-     * <p>
-     * 如果有大量的消息要投递，建议使用 {@link #deliverBatchFast(List)}
-     */
-    default void deliverBatch(List<MessageDO> messages) {
-        for (MessageDO message : messages) {
-            this.deliver(message);
-        }
-    }
-
-    /**
+     * <pre>
      * 批量投递消息（高性能版）
+     *
+     * 为了进一步提高性能，建议实现此方法时尽可能减少对消息的 raw data 进行 check 操作，框架会在
+     * 消息集的 {@link MessageMass#prepare()} 阶段调用相关的逻辑以尽可能保证数据是符合预期的
+     * </pre>
+     *
+     * @return delivery id
      */
-    void deliverBatchFast(List<MessageDO> messages);
-
-    abstract class Base extends EventPublisher.Base implements RawMessageDeliverer {
-    }
-
-    /**
-     * 消息分发完成事件
-     */
-    class DeliveryEvent extends Event.Base<RawMessageDeliverer> {
-        private List<MessageDO> messages;
-        // TODO::
-        private int success = 0;
-        private int fail = 0;
-        private int error = 0;
-
-        public DeliveryEvent(List<MessageDO> messages, int success, int fail, int error) {
-            this.messages = messages;
-            this.success = success;
-            this.fail = fail;
-            this.error = error;
-        }
-    }
+    String deliverBatchFast(List<MessageDO> messages);
 }

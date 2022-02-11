@@ -18,6 +18,10 @@ public abstract class SubMassDO implements DataObject<Long> {
      */
     private SubMass.Status status;
     /**
+     * 投递 id
+     */
+    private String deliveryId;
+    /**
      * 序列号
      */
     private Integer serialNum;

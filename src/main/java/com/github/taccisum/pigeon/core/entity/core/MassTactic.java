@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass.SUB_MASS_SIZE;
+import static com.github.taccisum.pigeon.core.entity.core.mass.PartitionMessageMass.DEFAULT_SUB_MASS_SIZE;
 
 /**
  * 消息群发策略
@@ -70,8 +70,8 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * @param boost 是否加速分发（例如切片并行操作）
      */
     public final MessageMass exec(boolean boost) throws ExecException {
-        if (this.getSourceSize() > SUB_MASS_SIZE) {
-            log.info("检测到策略 {} 消息源 size 大于 {}，将强制执行 boost 分发", this.id(), SUB_MASS_SIZE);
+        if (this.getSourceSize() > DEFAULT_SUB_MASS_SIZE) {
+            log.info("检测到策略 {} 消息源 size 大于 {}，将强制执行 boost 分发", this.id(), DEFAULT_SUB_MASS_SIZE);
             boost = true;
         }
 
@@ -148,6 +148,8 @@ public abstract class MassTactic extends Entity.Base<Long> {
                 }
             }).exceptionally(e -> {
                 log.warn(String.format("群发策略 %d 异步执行出现异常", this.id()), e);
+                // 重置状态
+                this.updateStatus(Status.AVAILABLE);
                 return null;
             });
 
@@ -259,10 +261,13 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 创建一个 boost 消息集（仅支持正式发送）
      */
     protected MessageMass newBoostMass() {
+        MessageTemplate template = this.getMessageTemplate();
         MessageMassDO o = this.messageMassDAO.newEmptyDataObject();
         o.setTest(false);
         o.setSize(this.getSourceSize());
         o.setType("PARTITION");
+        o.setMessageType(template.getMessageType());
+        o.setSpType(template.data().getSpType());
         o.setTacticId(this.id());
         return this.messageMassRepo.create(o);
     }

@@ -1,5 +1,6 @@
 package com.github.taccisum.pigeon.core.valueobj;
 
+import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.pigeon.core.data.MessageDO;
 import com.github.taccisum.pigeon.core.entity.core.Message;
 import com.github.taccisum.pigeon.core.entity.core.RawMessageDeliverer;
@@ -11,19 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 /**
- * 由同类消息组成的消息集
+ * 由同类消息组成的消息集，提供对批量消息的变换能力
  *
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.2
  */
 @Slf4j
 public class Messages {
-    private static final ForkJoinPool POLL = new ForkJoinPool();
     /**
      * 消息元素
      */
@@ -33,11 +31,6 @@ public class Messages {
      */
     @Getter
     private Class<? extends Message> type;
-    /**
-     * 最后一次分发的失败次数
-     */
-    @Getter
-    private int lastDeliverFailCount;
 
     public Messages(List<Message> messages) {
         this(messages, null);
@@ -112,42 +105,23 @@ public class Messages {
         return messages.size() == 0;
     }
 
+    public List<Message> getOriginList() {
+        return this.messages;
+    }
+
     /**
-     * 批量分发消息
+     * 获取所有消息的 id 组成的列表
      */
-    public void deliver() {
-        if (this.isEmpty()) {
-            return;
-        }
+    public List<Long> ids() {
+        return this.messages.stream()
+                .map(Entity::id)
+                .collect(Collectors.toList());
+    }
 
-        RawMessageDeliverer deliverer = this.findSuitableRawMessageDeliverer();
-
-        if (deliverer != null) {
-            // TODO::
-            deliverer.deliverBatchFast(this.listRaw());
-//                    failCount =
-        } else {
-            log.warn("消息类型 {} 无合适的 Raw 消息分发器，无法执行批量发送，将回退到原始的逐条发送方式（注意：此方式性能极为低下！）", this.getType().getName());
-            try {
-                lastDeliverFailCount = POLL.submit(
-                        () -> messages.parallelStream()
-                                .map(message -> {
-                                    try {
-                                        message.deliver();
-                                        return true;
-                                    } catch (Exception e) {
-                                        log.error(String.format("消息 %d 发送失败", message.id()), e);
-                                        return false;
-                                    }
-                                })
-                                .map(success -> !success ? 1 : 0)
-                                .reduce(Integer::sum)
-                                .orElse(0)
-                ).get();
-            } catch (InterruptedException | ExecutionException e) {
-                // TODO::
-                e.printStackTrace();
-            }
-        }
+    /**
+     * 是否实时消息
+     */
+    public boolean isRealTime() {
+        return messages.get(0).isRealTime();
     }
 }

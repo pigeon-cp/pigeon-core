@@ -9,6 +9,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -22,9 +23,9 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
     private static final ForkJoinPool POOL = new ForkJoinPool();
 
     /**
-     * 子集大小
+     * 默认子集大小
      */
-    public static final int SUB_MASS_SIZE = 500;
+    public static final int DEFAULT_SUB_MASS_SIZE = 500;
     private static final String TIMER_MASS_PREPARATION = "mass.preparation";
 
     public PartitionMessageMass(Long id) {
@@ -48,12 +49,11 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
                 .register(Metrics.globalRegistry);
 
         timer.record(() -> {
-            // 先 partition，再并行执行，否则可能在并行线程中获取不到数据？
-            List<SubMass> partitions = this.partition();
-
+            // TODO:: 先 partition，再并行执行，否则可能在并行线程中获取不到数据？
             if (parallel) {
                 // TODO:: 事务问题
-                POOL.submit(() -> {
+                POOL.invoke(ForkJoinTask.adapt(() -> {
+                    List<SubMass> partitions = this.partition();
                     partitions.parallelStream()
                             .forEach(sub -> {
                                 try {
@@ -62,9 +62,9 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
                                     log.error(String.format("sub mass %d prepare 发生错误", sub.id()), e);
                                 }
                             });
-                });
+                }));
             } else {
-                partitions.forEach(SubMass::prepare);
+                this.partition().forEach(SubMass::prepare);
             }
             this.markPrepared();
         });
@@ -106,9 +106,16 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
     protected void doDeliver(boolean parallel) throws DeliverException {
         // 分片进行投递
         if (parallel) {
-            POOL.submit(() -> {
-                this.partition().parallelStream().forEach(SubMass::deliver);
-            });
+            POOL.submit(ForkJoinTask.adapt(() -> {
+                this.partition().parallelStream().forEach(subMass -> {
+                    try {
+                        subMass.deliver();
+                    } catch (Exception e) {
+                        // 单个子集 deliver 失败不影响全局
+                        log.warn(String.format("子集 %d 分发失败", subMass.id()), e);
+                    }
+                });
+            }));
         } else {
             this.partition().forEach(SubMass::deliver);
         }
@@ -121,6 +128,31 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
      */
     @Override
     public List<SubMass> partition() {
+        return this.partitionBySize(Math.min(DEFAULT_SUB_MASS_SIZE, maxSubMassSize()));
+    }
+
+    /**
+     * <pre>
+     * 获取切片时可以支持的最大子集 size
+     *
+     * 子类实现时可以根据具体消息类型限制最大子集数量，由此来避免一些问题，如：
+     * - 子集数据量过大导致相应任务缓慢
+     * - 子集数量超过出服务商单次允许发送最大值，导致调用失败
+     * </pre>
+     *
+     * @since 0.2
+     */
+    protected int maxSubMassSize() {
+        return 10000;
+    }
+
+    /**
+     * 指定子集 size 将此消息集合进行分片
+     *
+     * @param subSize 子集大小
+     * @return 分片后的消息子集合
+     */
+    protected List<SubMass> partitionBySize(int subSize) {
         if (this.size() <= 0) {
             return new ArrayList<>();
         }
@@ -136,36 +168,39 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
             log.warn("消息集 {} size 为 0，无需进行分片", this.id());
             return new ArrayList<>();
         }
-        return Arrays.stream(partition(total))
-                // TODO:: 并行 insert 似乎会有隔离问题，注释掉观望一下先
+        return Arrays.stream(partition(total, subSize))
+                // TODO:: 并行 insert 似乎会有隔离问题，注释掉观望一下先. or 后续改成批量 insert
 //                .parallel()
                 .map(part -> {
                     int serialNum = part[0];
                     int size = part[1];
-                    int startIndex = serialNum * SUB_MASS_SIZE;
+                    int startIndex = serialNum * subSize;
                     return this.subMassRepo.create(this.id(), serialNum, startIndex, size);
                 })
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 获取最大子集大小
-     */
-    int maxSubSize() {
-        return SUB_MASS_SIZE;
+    static int[][] partition(int total) {
+        return partition(total, DEFAULT_SUB_MASS_SIZE);
     }
 
-    static int[][] partition(int total) {
+    /**
+     * 获取存放指定数量元素所需的二维数组
+     *
+     * @param total      元素数量
+     * @param subSetSize 子集大小
+     */
+    static int[][] partition(int total, int subSetSize) {
         if (total <= 0) {
             return new int[0][2];
         }
-        int rest = total % SUB_MASS_SIZE;
-        int size = rest == 0 ? total / SUB_MASS_SIZE : total / SUB_MASS_SIZE + 1;
+        int rest = total % subSetSize;
+        int size = rest == 0 ? total / subSetSize : total / subSetSize + 1;
         int[][] indexes = new int[size][2];
 
         for (int i = 0; i < indexes.length; i++) {
             indexes[i][0] = i;
-            indexes[i][1] = SUB_MASS_SIZE;
+            indexes[i][1] = subSetSize;
         }
 
         if (rest > 0) {

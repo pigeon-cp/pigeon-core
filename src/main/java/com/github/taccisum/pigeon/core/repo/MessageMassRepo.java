@@ -24,12 +24,12 @@ public class MessageMassRepo {
         if (data == null) {
             return Optional.empty();
         }
-        return Optional.of(factory.createMessageMass(data.getId(), data.getType()));
+        return Optional.of(factory.createMessageMass(data.getId(), data.getType(), data.getSpType(), data.getMessageType()));
     }
 
     public MessageMass create(MessageMassDO data) {
         data.setStatus(MessageMass.Status.CREATING);
         Long id = dao.insert(data);
-        return factory.createMessageMass(id, data.getType());
+        return factory.createMessageMass(id, data.getType(), data.getSpType(), data.getMessageType());
     }
 }

@@ -69,7 +69,7 @@ class PartitionMessageMassTest {
         }
 
         private static Integer[] create(int total) {
-            return new Integer[]{total, PartitionMessageMass.SUB_MASS_SIZE, total % PartitionMessageMass.SUB_MASS_SIZE};
+            return new Integer[]{total, PartitionMessageMass.DEFAULT_SUB_MASS_SIZE, total % PartitionMessageMass.DEFAULT_SUB_MASS_SIZE};
         }
     }
 

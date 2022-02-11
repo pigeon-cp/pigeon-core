@@ -107,6 +107,9 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         o.setType(this.getMessageType());
         o.setSpType(data.getSpType());
         o.setSpAccountId(data.getSpAccountId());
+        o.setThirdTemplateCode(data.getThirdCode());
+        // TODO::
+        o.setSignature("TODO");
         o.setSender(sender);
         o.setTarget(user.getAccountFor(this));
         o.setTargetUserId(user.getId());

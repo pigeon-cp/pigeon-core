@@ -48,13 +48,25 @@ public class MessageDO {
      */
     private String content;
     /**
+     * 消息签名
+     */
+    private String signature;
+    /**
      * 模板 id
      */
     private Long templateId;
     /**
-     * 参数
+     * 第三方模板 code
+     */
+    private String thirdTemplateCode;
+    /**
+     * 模板参数
      */
     private String params;
+    /**
+     * 投递 id（消息投递到第三方服务商进行发送时返回的 id）
+     */
+    private String deliveryId;
     /**
      * 标签
      */
