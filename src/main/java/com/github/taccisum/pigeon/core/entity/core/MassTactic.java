@@ -146,6 +146,9 @@ public abstract class MassTactic extends Entity.Base<Long> {
                 } else {
                     mass.deliver();
                 }
+            }).exceptionally(e -> {
+                log.warn(String.format("群发策略 %d 异步执行出现异常", this.id()), e);
+                return null;
             });
 
             return mass;
