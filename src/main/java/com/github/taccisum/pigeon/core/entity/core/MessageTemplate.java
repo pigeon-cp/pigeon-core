@@ -89,6 +89,14 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         return this.initMessageInMemory(sender, new User.Dummy(target), params);
     }
 
+    public MessageDO initMessageInMemory(String sender, User user, Object params) {
+        return this.initMessageInMemory(sender, user, params, null, null);
+    }
+
+    public MessageDO initMessageInMemory(String sender, String target, Object params, String signature, String ext) {
+        return this.initMessageInMemory(sender, new User.Dummy(target), params, signature, ext);
+    }
+
     /**
      * <pre>
      * 使用当前模板创建出一条新的仅存在于内存中的待发送消息数据对象
@@ -96,20 +104,21 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * 例如在大规模、批量创建消息时你可以使用此方法先将数据存储在内存中，然后再通过批量插入到 DB 以提高性能
      * </pre>
      *
-     * @param sender 发送人地址
-     * @param user   消息目标用户
-     * @param params 模板参数
+     * @param sender    发送人地址
+     * @param user      消息目标用户
+     * @param params    模板参数
+     * @param signature 消息签名
+     * @param ext       自定义拓展参数
      * @since 0.2
      */
-    public MessageDO initMessageInMemory(String sender, User user, Object params) {
+    public MessageDO initMessageInMemory(String sender, User user, Object params, String signature, String ext) {
         MessageTemplateDO data = this.data();
         MessageDO o = new MessageDO();
         o.setType(this.getMessageType());
         o.setSpType(data.getSpType());
         o.setSpAccountId(data.getSpAccountId());
         o.setThirdTemplateCode(data.getThirdCode());
-        // TODO::
-        o.setSignature("TODO");
+        o.setSignature(signature);
         o.setSender(sender);
         o.setTarget(user.getAccountFor(this));
         o.setTargetUserId(user.getId());
@@ -125,6 +134,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         o.setContent(rule.resolve(data.getContent(), o.getParams()));
 
         o.setTag(data.getTag());
+        o.setExt(ext);
         return o;
     }
 
@@ -244,8 +254,11 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
             info.setAccount(mail);
         }
 
+        // TODO:: refactor, 通过 info 的字段去自动解析模板，提高拓展性
         info.setSender(CSVUtils.getOrDefault(row, "sender", def.getSender()));
         info.setParams(CSVUtils.getOrDefault(row, "params", def.getParams()));
+        info.setSignature(CSVUtils.getOrDefault(row, "sign", def.getSignature()));
+        info.setExt(CSVUtils.getOrDefault(row, "ext", def.getExt()));
 
         return info;
     }

@@ -193,12 +193,10 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
                 try {
                     MessageDO message;
                     if (info.getAccount() instanceof User) {
-                        message = template.initMessageInMemory(info.getSender(), (User) info.getAccount(), info.getParams());
+                        message = template.initMessageInMemory(info.getSender(), (User) info.getAccount(), info.getParams(), info.getSignature(), info.getExt());
                     } else {
-                        message = template.initMessageInMemory(info.getSender(), (String) info.getAccount(), info.getParams());
+                        message = template.initMessageInMemory(info.getSender(), (String) info.getAccount(), info.getParams(), info.getSignature(), info.getExt());
                     }
-                    // TODO:: 初始值
-                    message.setSender("pigeon");
                     message.setStatus(Message.Status.NOT_SEND);
                     message.setMassId(main.id());
                     message.setSubMassId(this.id());

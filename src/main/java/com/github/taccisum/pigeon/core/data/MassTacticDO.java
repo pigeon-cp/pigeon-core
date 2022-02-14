@@ -42,6 +42,14 @@ public abstract class MassTacticDO implements DataObject<Long> {
      */
     private String defaultParams;
     /**
+     * 缺省的消息签名
+     */
+    private String defaultSignature;
+    /**
+     * 缺省的拓展参数内容
+     */
+    private String defaultExt;
+    /**
      * 数据源（应包含发送目标，可包括模板参数等其它配置，取决于具体模板实现）
      */
     private String source;

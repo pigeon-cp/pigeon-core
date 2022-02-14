@@ -309,6 +309,8 @@ public abstract class MassTactic extends Entity.Base<Long> {
         MessageInfo def = new MessageInfo();
         def.setSender(this.data().getDefaultSender());
         def.setParams(this.data().getDefaultParams());
+        def.setSignature(this.data().getDefaultSignature());
+        def.setExt(this.data().getDefaultExt());
         return this.getMessageTemplate()
                 .resolve(start, end, this.getSource(), def);
     }

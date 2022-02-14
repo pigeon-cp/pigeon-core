@@ -87,4 +87,8 @@ public class MessageDO {
      * 所属消息子集 id
      */
     private Long subMassId;
+    /**
+     * 拓展内容（供插件实现时自行拓展使用）
+     */
+    private String ext;
 }
