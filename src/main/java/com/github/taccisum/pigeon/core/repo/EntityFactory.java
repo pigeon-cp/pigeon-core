@@ -39,6 +39,7 @@ public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C>
 
     @Override
     default int getOrder() {
-        return Integer.MIN_VALUE;
+        // 默认最小优先级
+        return Integer.MAX_VALUE;
     }
 }
