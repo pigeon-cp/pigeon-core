@@ -1,5 +1,6 @@
 package com.github.taccisum.pigeon.core.entity.core.mass;
 
+import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.exception.DataErrorException;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
@@ -201,7 +202,7 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
                     message.setMassId(main.id());
                     message.setSubMassId(this.id());
                     messages.add(message);
-                } catch (MessageRepo.CreateMessageException e) {
+                } catch (DomainException e) {
                     log.warn("发送至 {} 的消息（sub mass id: {}）创建失败：{}", info, this.id(), e.getMessage());
                 }
             }

@@ -85,15 +85,15 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     /**
      * @since 0.2
      */
-    public MessageDO initMessageInMemory(String sender, String target, Object params) {
+    public MessageDO initMessageInMemory(String sender, String target, Object params) throws InitMessageException {
         return this.initMessageInMemory(sender, new User.Dummy(target), params);
     }
 
-    public MessageDO initMessageInMemory(String sender, User user, Object params) {
+    public MessageDO initMessageInMemory(String sender, User user, Object params) throws InitMessageException {
         return this.initMessageInMemory(sender, user, params, null, null);
     }
 
-    public MessageDO initMessageInMemory(String sender, String target, Object params, String signature, String ext) {
+    public MessageDO initMessageInMemory(String sender, String target, Object params, String signature, String ext) throws InitMessageException {
         return this.initMessageInMemory(sender, new User.Dummy(target), params, signature, ext);
     }
 
@@ -111,7 +111,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param ext       自定义拓展参数
      * @since 0.2
      */
-    public MessageDO initMessageInMemory(String sender, User user, Object params, String signature, String ext) {
+    public MessageDO initMessageInMemory(String sender, User user, Object params, String signature, String ext) throws InitMessageException {
         MessageTemplateDO data = this.data();
         MessageDO o = new MessageDO();
         o.setType(this.getMessageType());
@@ -268,10 +268,17 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      */
     protected abstract String getAccountHeaderName();
 
-    @ErrorCode(value = "RESOLVE_TARGET_SOURCE", description = "解析目标源失败")
+    @ErrorCode(value = "TEMPLATE.RESOLVE_TARGET_SOURCE", description = "解析目标源失败")
     public static class ResolveSourceException extends DomainException {
         public ResolveSourceException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    @ErrorCode("TEMPLATE.INIT_MESSAGE")
+    public static class InitMessageException extends DomainException {
+        public InitMessageException(String reason) {
+            super(String.format("通过模板创建消息失败，原因：%s", reason));
         }
     }
 
