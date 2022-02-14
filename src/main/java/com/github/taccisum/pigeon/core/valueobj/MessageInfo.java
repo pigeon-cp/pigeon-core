@@ -26,10 +26,14 @@ public class MessageInfo {
     private String params;
     /**
      * 消息签名
+     *
+     * @since 0.2
      */
     private String signature;
     /**
      * 自定义拓展参数
+     *
+     * @since 0.2
      */
     private String ext;
 }

@@ -21,10 +21,14 @@ public abstract class MessageMassDO implements DataObject<Long> {
     private String type;
     /**
      * 消息类型
+     *
+     * @since 0.2
      */
     private String messageType;
     /**
      * 群发服务商类型
+     *
+     * @since 0.2
      */
     private String spType;
     /**

@@ -89,6 +89,8 @@ public class MessageDO {
     private Long subMassId;
     /**
      * 拓展内容（供插件实现时自行拓展使用）
+     *
+     * @since 0.2
      */
     private String ext;
 }

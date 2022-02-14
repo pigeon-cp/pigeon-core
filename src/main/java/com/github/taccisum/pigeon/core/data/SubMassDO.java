@@ -19,6 +19,8 @@ public abstract class SubMassDO implements DataObject<Long> {
     private SubMass.Status status;
     /**
      * 投递 id
+     *
+     * @since 0.2
      */
     private String deliveryId;
     /**

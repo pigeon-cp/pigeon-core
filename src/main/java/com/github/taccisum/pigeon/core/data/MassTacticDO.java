@@ -43,10 +43,14 @@ public abstract class MassTacticDO implements DataObject<Long> {
     private String defaultParams;
     /**
      * 缺省的消息签名
+     *
+     * @since 0.2
      */
     private String defaultSignature;
     /**
      * 缺省的拓展参数内容
+     *
+     * @since 0.2
      */
     private String defaultExt;
     /**
