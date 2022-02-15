@@ -12,6 +12,7 @@ public abstract class InfoUtils {
      * 例：
      * - omit('abcdefg', 5) -> ab...
      * - omit('abcd', 5) -> abcd
+     * - omit('abc', 3) -> ...
      * </pre>
      */
     public static String omit(String info, int size) {
