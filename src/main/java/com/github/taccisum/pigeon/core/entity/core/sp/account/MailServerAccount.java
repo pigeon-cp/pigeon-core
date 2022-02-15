@@ -34,7 +34,7 @@ public class MailServerAccount extends ThirdAccount {
         MessageDO data = mail.data();
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom(data.getSender());
-        String[][] targets = resolveTargets(data.getTarget());
+        String[][] targets = mail.getTargets();
         String to = targets[0][0];
         if (StringUtils.isBlank(to)) {
             throw new IllegalArgumentException("to can not be null or empty");
@@ -47,41 +47,6 @@ public class MailServerAccount extends ThirdAccount {
         msg.setSentDate(new Date());
         msg.setReplyTo(data.getSender());
         this.getSender().send(msg);
-    }
-
-    static String[][] resolveTargets(String targets) {
-        String to = null;
-        String[] cc = null;
-        String[] bcc = null;
-        for (String target : targets.split("[;；]")) {
-            if (StringUtils.isBlank(target)) {
-                continue;
-            }
-
-            String[] t = target.split("[:：]");
-
-            if (t.length == 1) {
-                to = t[0];
-            } else {
-                String key = t[0];
-                String val = t[1];
-                if ("to".equalsIgnoreCase(key)) {
-                    to = val;
-                } else if ("cc".equalsIgnoreCase(key)) {
-                    cc = val.split("[,，]");
-                } else if ("bcc".equalsIgnoreCase(key)) {
-                    bcc = val.split("[,，]");
-                } else {
-                    // ignore
-                }
-            }
-        }
-
-        return new String[][]{
-                new String[]{to},
-                cc,
-                bcc
-        };
     }
 
     public JavaMailSender getSender() {
