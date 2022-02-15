@@ -174,7 +174,7 @@ public abstract class Message extends Entity.Base<Long> {
      * 更新消息状态及状态信息
      *
      * @param status 目标状态
-     * @param msg    状态信息
+     * @param msg    状态信息（过长会自动截断）
      */
     protected void updateStatus(Status status, String msg) {
         MessageDO o = new MessageDO();
