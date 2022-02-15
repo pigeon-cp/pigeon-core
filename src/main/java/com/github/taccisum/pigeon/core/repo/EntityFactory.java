@@ -37,9 +37,12 @@ public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C>
      */
     boolean match(ID id, C criteria);
 
+    /**
+     * 优先级，数字越小优先级越高
+     */
     @Override
     default int getOrder() {
-        // 默认最小优先级
-        return Integer.MAX_VALUE;
+        // 默认 0
+        return 0;
     }
 }

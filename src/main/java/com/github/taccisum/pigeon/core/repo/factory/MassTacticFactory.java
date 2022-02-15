@@ -36,5 +36,10 @@ public interface MassTacticFactory extends EntityFactory<Long, MassTactic, MassT
         public boolean match(Long id, Criteria criteria) {
             return true;
         }
+
+        @Override
+        public int getOrder() {
+            return Integer.MAX_VALUE;
+        }
     }
 }

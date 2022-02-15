@@ -32,7 +32,7 @@ public class ThirdAccountRepo {
             return Optional.empty();
         }
         ThirdAccountDO data = ls.get(0);
-        return Optional.of(factory.createThirdAccount(data.getId(), data.getUsername(), data.getSpType()));
+        return Optional.of(factory.createThirdAccount(data.getId(), data.getUsername(), data.getType(), data.getSpType()));
     }
 
     public Optional<ThirdAccount> get(long id) {
@@ -40,7 +40,7 @@ public class ThirdAccountRepo {
         if (data == null) {
             return Optional.empty();
         }
-        return Optional.of(factory.createThirdAccount(data.getId(), data.getUsername(), data.getSpType()));
+        return Optional.of(factory.createThirdAccount(data.getId(), data.getUsername(), data.getType(), data.getSpType()));
     }
 
     @ErrorCode(value = "THIRD_ACCOUNT", inherited = true, description = "三方账号不存在")

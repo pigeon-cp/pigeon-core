@@ -11,6 +11,7 @@ import com.github.taccisum.pigeon.core.entity.core.sp.MessageServiceProvider;
 import com.github.taccisum.pigeon.core.repo.MessageTemplateRepo;
 import com.github.taccisum.pigeon.core.repo.ServiceProviderRepo;
 import com.github.taccisum.pigeon.core.repo.ThirdAccountRepo;
+import com.github.taccisum.pigeon.core.utils.InfoUtils;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import lombok.Getter;
@@ -179,7 +180,7 @@ public abstract class Message extends Entity.Base<Long> {
         MessageDO o = new MessageDO();
         o.setId(this.id());
         o.setStatus(status);
-        o.setStatusRemark(msg);
+        o.setStatusRemark(InfoUtils.omit(msg, 200));
         this.dao.updateById(o);
     }
 

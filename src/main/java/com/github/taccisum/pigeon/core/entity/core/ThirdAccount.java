@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
  */
-public class ThirdAccount extends Entity.Base<Long> {
+public abstract class ThirdAccount extends Entity.Base<Long> {
     @Autowired
     private ThirdAccountDAO dao;
 

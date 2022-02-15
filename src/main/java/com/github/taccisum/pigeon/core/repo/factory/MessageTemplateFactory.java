@@ -32,5 +32,10 @@ public interface MessageTemplateFactory extends EntityFactory<Long, MessageTempl
         public boolean match(Long id, Criteria criteria) {
             return true;
         }
+
+        @Override
+        public int getOrder() {
+            return Integer.MAX_VALUE;
+        }
     }
 }

@@ -51,10 +51,10 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
         );
     }
 
-    public ThirdAccount createThirdAccount(long id, String username, String spType) {
+    public ThirdAccount createThirdAccount(long id, String username, String type, String spType) {
         return this.create(
                 id,
-                new ThirdAccountFactory.Criteria(username, spType),
+                new ThirdAccountFactory.Criteria(username, type, spType),
                 ThirdAccountFactory.class
         );
     }
