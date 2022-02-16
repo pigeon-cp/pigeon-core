@@ -37,5 +37,10 @@ public interface ServiceProviderFactory extends EntityFactory<String, ServicePro
         public boolean match(String s, Criteria criteria) {
             return true;
         }
+
+        @Override
+        public int getOrder() {
+            return Integer.MAX_VALUE;
+        }
     }
 }
