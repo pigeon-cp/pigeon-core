@@ -60,26 +60,29 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         return dao.selectById(this.id());
     }
 
-    /**
-     * 使用当前模板创建出一条新的待发送消息实例
-     *
-     * @param sender 发送人地址
-     * @param target 消息目标
-     * @param params 模板参数
-     */
     public Message initMessage(String sender, String target, Object params) throws MessageRepo.CreateMessageException {
-        return initMessage(sender, new User.Dummy(target), params);
+        return this.initMessage(sender, new User.Dummy(target), params);
+    }
+
+    public Message initMessage(String sender, User user, Object params) throws MessageRepo.CreateMessageException {
+        return this.initMessage(sender, user, params, null, null);
+    }
+
+    public Message initMessage(String sender, String target, Object params, String signature, String ext) throws MessageRepo.CreateMessageException {
+        return this.initMessage(sender, new User.Dummy(target), params, signature, ext);
     }
 
     /**
      * 使用当前模板创建出一条新的待发送消息实例
      *
-     * @param sender 发送人地址
-     * @param user   消息目标用户
-     * @param params 模板参数
+     * @param sender    发送人地址
+     * @param user      消息目标用户
+     * @param params    模板参数
+     * @param signature 签名
+     * @param ext       扩展参数
      */
-    public Message initMessage(String sender, User user, Object params) throws MessageRepo.CreateMessageException {
-        return messageRepo.create(initMessageInMemory(sender, user, params));
+    public Message initMessage(String sender, User user, Object params, String signature, String ext) throws MessageRepo.CreateMessageException {
+        return messageRepo.create(initMessageInMemory(sender, user, params, signature, ext));
     }
 
     /**
