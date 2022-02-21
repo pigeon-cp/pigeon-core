@@ -2,14 +2,14 @@ package pigeon.core.repo;
 
 import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
-import pigeon.core.dao.MessageDAO;
-import pigeon.core.data.MessageDO;
-import pigeon.core.entity.core.Message;
-import pigeon.core.entity.core.MessageTemplate;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import pigeon.core.dao.MessageDAO;
+import pigeon.core.data.MessageDO;
+import pigeon.core.entity.core.Message;
+import pigeon.core.entity.core.MessageTemplate;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -47,6 +47,9 @@ public class MessageRepo {
         data.setStatus(Message.Status.NOT_SEND);
         if (StringUtils.isBlank(data.getSender())) {
             data.setSender(Message.DEFAULT_SENDER);
+        }
+        if (data.getSpAccountId() == null) {
+            data.setSpAccountId(-1L);
         }
 
         dao.insert(data);
