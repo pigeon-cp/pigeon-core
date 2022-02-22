@@ -5,6 +5,11 @@ import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.domain.core.exception.DataErrorException;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pigeon.core.dao.MassTacticDAO;
 import pigeon.core.dao.MessageMassDAO;
 import pigeon.core.data.MassTacticDO;
@@ -15,10 +20,6 @@ import pigeon.core.repo.MessageTemplateRepo;
 import pigeon.core.service.TransactionWrapper;
 import pigeon.core.valueobj.MessageInfo;
 import pigeon.core.valueobj.Source;
-import com.google.common.collect.Lists;
-import org.apache.commons.lang.NotImplementedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 import java.util.Date;
@@ -58,6 +59,9 @@ public abstract class MassTactic extends Entity.Base<Long> {
         throw new NotImplementedException();
     }
 
+    /**
+     * @deprecated use {@link #execAsync()} instead
+     */
     public final MessageMass exec() throws ExecException {
         return this.exec(false);
     }
@@ -66,6 +70,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行此策略
      *
      * @param boost 是否加速分发（例如切片并行操作）
+     * @deprecated use {@link #execAsync()} instead
      */
     public final MessageMass exec(boolean boost) throws ExecException {
         if (this.getSourceSize() > PartitionMessageMass.DEFAULT_SUB_MASS_SIZE) {
@@ -155,6 +160,9 @@ public abstract class MassTactic extends Entity.Base<Long> {
         });
     }
 
+    /**
+     * @deprecated will remove on 0.3
+     */
     public final MessageMass prepare() throws PrepareException {
         return this.prepare(false);
     }
@@ -163,6 +171,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行策略准备工作（单独执行在海量消息群发场景有助于降低发送时延）
      *
      * @param boost 是否加速
+     * @deprecated will remove on 0.3
      */
     public final MessageMass prepare(boolean boost) throws PrepareException {
         if (this.isExecuting()) {
@@ -206,6 +215,8 @@ public abstract class MassTactic extends Entity.Base<Long> {
 
     /**
      * 执行准备工作
+     *
+     * @deprecated will remove on 0.3
      */
     protected MessageMass doPrepare() {
         return this.doPrepare(false);
@@ -215,6 +226,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行准备工作
      *
      * @param boost 是否加速
+     * @deprecated will remove on 0.3
      */
     protected MessageMass doPrepare(boolean boost) {
         MessageMass mass;
@@ -257,17 +269,11 @@ public abstract class MassTactic extends Entity.Base<Long> {
 
     /**
      * 创建一个 boost 消息集（仅支持正式发送）
+     *
+     * @deprecated will remove on 0.3
      */
     protected MessageMass newBoostMass() {
-        MessageTemplate template = this.getMessageTemplate();
-        MessageMassDO o = this.messageMassDAO.newEmptyDataObject();
-        o.setTest(false);
-        o.setSize(this.getSourceSize());
-        o.setType("PARTITION");
-        o.setMessageType(template.getMessageType());
-        o.setSpType(template.data().getSpType());
-        o.setTacticId(this.id());
-        return this.messageMassRepo.create(o);
+        return newMass();
     }
 
     /**
@@ -276,12 +282,25 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * @param test 是否测试集
      */
     protected MessageMass newMass(boolean test) {
+        MessageTemplate template = this.getMessageTemplate();
         MessageMassDO o = this.messageMassDAO.newEmptyDataObject();
-        o.setType("DEFAULT");
         o.setTest(test);
+
         if (!test) {
             o.setSize(this.getSourceSize());
+            String type = this.data().getType();
+
+            if (StringUtils.isBlank(type)) {
+                o.setType("PARTITION");
+            } else {
+                o.setType(type);
+            }
+        } else {
+            // TODO:: 测试集相关实现
+            throw new NotImplementedException();
         }
+        o.setMessageType(template.getMessageType());
+        o.setSpType(template.data().getSpType());
         o.setTacticId(this.id());
         return this.messageMassRepo.create(o);
     }
