@@ -9,7 +9,6 @@ import pigeon.core.dao.SubMassDAO;
 import pigeon.core.data.MessageDO;
 import pigeon.core.data.SubMassDO;
 import pigeon.core.entity.core.*;
-import pigeon.core.entity.core.*;
 import pigeon.core.repo.MessageMassRepo;
 import pigeon.core.repo.MessageRepo;
 import pigeon.core.utils.MagnitudeUtils;
@@ -78,7 +77,7 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
                 }
 
                 this.updateStatus(Status.DELIVERING);
-                return this.deliver0(new Messages(this.listAllMessages()));
+                return this.doDeliver(new Messages(this.listAllMessages()));
             });
         } finally {
             this.updateStatus(Status.DELIVERED);
@@ -86,7 +85,7 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
         }
     }
 
-    private int deliver0(Messages messages) {
+    protected int doDeliver(Messages messages) {
         if (messages.isEmpty()) {
             log.warn("消息子集 {} size 为 {}，但实际消息数为 0，建议排查是否数据错误", this.id(), this.size());
             return 0;
@@ -177,8 +176,6 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
 
     @Override
     public void prepare() {
-        SubMassDO data = this.data();
-
         Timer timer = Timer.builder("submass.preparation")
                 .description("消息子集 prepare 耗费时间")
                 .tag("type", this.getClass().getName())
@@ -187,30 +184,35 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
                 .register(Metrics.globalRegistry);
 
         timer.record(() -> {
-            PartitionMessageMass main = this.getMain();
-            MassTactic tactic = main.getTactic().orElseThrow(() -> new DataErrorException("消息子集", this.id(), "关联策略不存在"));
-            MessageTemplate template = tactic.getMessageTemplate();
-            List<MessageDO> messages = new ArrayList<>();
-            for (MessageInfo info : tactic.listMessageInfos(data.getStart(), data.getEnd())) {
-                try {
-                    MessageDO message;
-                    if (info.getAccount() instanceof User) {
-                        message = template.initMessageInMemory(info.getSender(), (User) info.getAccount(), info.getParams(), info.getSignature(), info.getExt());
-                    } else {
-                        message = template.initMessageInMemory(info.getSender(), (String) info.getAccount(), info.getParams(), info.getSignature(), info.getExt());
-                    }
-                    message.setStatus(Message.Status.NOT_SEND);
-                    message.setMassId(main.id());
-                    message.setSubMassId(this.id());
-                    messages.add(message);
-                } catch (DomainException e) {
-                    log.warn("发送至 {} 的消息（sub mass id: {}）创建失败：{}", info, this.id(), e.getMessage());
-                }
-            }
-            this.insertAllAndAdd(messages);
-
+            this.doPrepare();
             this.markPrepared();
         });
+    }
+
+    protected void doPrepare() {
+        SubMassDO data = this.data();
+
+        PartitionMessageMass main = this.getMain();
+        MassTactic tactic = main.getTactic().orElseThrow(() -> new DataErrorException("消息子集", this.id(), "关联策略不存在"));
+        MessageTemplate template = tactic.getMessageTemplate();
+        List<MessageDO> messages = new ArrayList<>();
+        for (MessageInfo info : tactic.listMessageInfos(data.getStart(), data.getEnd())) {
+            try {
+                MessageDO message;
+                if (info.getAccount() instanceof User) {
+                    message = template.initMessageInMemory(info.getSender(), (User) info.getAccount(), info.getParams(), info.getSignature(), info.getExt());
+                } else {
+                    message = template.initMessageInMemory(info.getSender(), (String) info.getAccount(), info.getParams(), info.getSignature(), info.getExt());
+                }
+                message.setStatus(Message.Status.NOT_SEND);
+                message.setMassId(main.id());
+                message.setSubMassId(this.id());
+                messages.add(message);
+            } catch (DomainException e) {
+                log.warn("发送至 {} 的消息（sub mass id: {}）创建失败：{}", info, this.id(), e.getMessage());
+            }
+        }
+        this.insertAllAndAdd(messages);
     }
 
     private void insertAllAndAdd(List<MessageDO> messages) {
