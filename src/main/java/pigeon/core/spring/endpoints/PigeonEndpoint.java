@@ -1,5 +1,6 @@
 package pigeon.core.spring.endpoints;
 
+import org.pf4j.ExtensionPoint;
 import org.pf4j.PluginManager;
 import org.pf4j.PluginWrapper;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -54,6 +55,8 @@ public class PigeonEndpoint {
             plugins.put(plugin.getPluginId(), info);
         }
         map.put("plugins", plugins);
+
+        map.put("extensions", pluginManager.getExtensions(ExtensionPoint.class));
         return map;
     }
 }
