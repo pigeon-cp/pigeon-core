@@ -86,7 +86,7 @@ public class MessageRepo {
         return this.toEntities(this.dao.selectListBySubMassId(subMassId));
     }
 
-    private List<Message> toEntities(List<MessageDO> ls) {
+    private List<Message> toEntities(List<? extends MessageDO> ls) {
         if (CollectionUtils.isEmpty(ls)) {
             return new ArrayList<>();
         }

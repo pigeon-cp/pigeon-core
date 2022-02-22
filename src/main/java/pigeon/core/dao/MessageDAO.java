@@ -48,12 +48,12 @@ public interface MessageDAO extends BaseDAO<MessageDO> {
      * @param massId mass id
      * @param limit  最大限制数量
      */
-    List<MessageDO> selectListByMassId(Long massId, long limit);
+    List<? extends MessageDO> selectListByMassId(Long massId, long limit);
 
     /**
      * 根据 sub mass id 查找所有消息
      *
      * @param subMassId sub mass id
      */
-    List<MessageDO> selectListBySubMassId(Long subMassId);
+    List<? extends MessageDO> selectListBySubMassId(Long subMassId);
 }

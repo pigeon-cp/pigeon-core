@@ -14,5 +14,5 @@ public interface ThirdAccountDAO extends BaseDAO<ThirdAccountDO> {
      *
      * @param name 账号名称
      */
-    List<ThirdAccountDO> selectByUsername(String name);
+    List<? extends ThirdAccountDO> selectByUsername(String name);
 }

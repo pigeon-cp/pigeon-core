@@ -1,12 +1,14 @@
 package pigeon.core.dao;
 
+import pigeon.core.data.DataObject;
+
 import java.io.Serializable;
 
 /**
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
  */
-public interface BaseDAO<T> {
+public interface BaseDAO<T extends DataObject> {
     /**
      * 新增一条数据
      *
@@ -26,7 +28,7 @@ public interface BaseDAO<T> {
     void updateById(T data);
 
     /**
-     * 创建一个空的 DO  实例
+     * 创建一个空的 DO 实例
      */
     T newEmptyDataObject();
 }

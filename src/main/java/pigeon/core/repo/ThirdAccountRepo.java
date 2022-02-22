@@ -24,7 +24,7 @@ public class ThirdAccountRepo {
     private Factory factory;
 
     public Optional<ThirdAccount> getByUsername(String name) {
-        List<ThirdAccountDO> ls = dao.selectByUsername(name);
+        List<? extends ThirdAccountDO> ls = dao.selectByUsername(name);
         if (ls.size() > 1) {
             throw new DataErrorException("三方账号", null, String.format("账号 %s 名存在多条数据", name));
         }
