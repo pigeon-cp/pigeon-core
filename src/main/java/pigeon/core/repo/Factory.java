@@ -84,8 +84,13 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
                 MessageMassFactory.class);
     }
 
-    public SubMass createSubMessageMass(Long id) {
-        return new AbstractSubMass.Default(id);
+    public SubMass createSubMessageMass(Long id, String spType, String messageType) {
+        return this.create(
+                id,
+                new SubMassFactory.Criteria()
+                        .setSpType(spType)
+                        .setMessageType(messageType),
+                SubMassFactory.class);
     }
 
     /**

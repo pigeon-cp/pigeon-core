@@ -1,9 +1,10 @@
 package pigeon.core.repo;
 
+import org.springframework.stereotype.Component;
 import pigeon.core.dao.SubMassDAO;
 import pigeon.core.data.SubMassDO;
+import pigeon.core.entity.core.MessageMass;
 import pigeon.core.entity.core.SubMass;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -19,6 +20,8 @@ public class SubMassRepo {
     @Resource
     private SubMassDAO dao;
     @Resource
+    private MessageMassRepo messageMassRepo;
+    @Resource
     private Factory factory;
 
     public SubMass create(long massId, int serialNum, int start, int size) {
@@ -29,7 +32,8 @@ public class SubMassRepo {
         data.setSize(size);
         data.setStart(start);
         Long id = dao.insert(data);
-        return factory.createSubMessageMass(id);
+        MessageMass mass = getMass(massId);
+        return factory.createSubMessageMass(id, mass.data().getSpType(), mass.data().getMessageType());
     }
 
     public Optional<SubMass> get(Long id) {
@@ -37,13 +41,22 @@ public class SubMassRepo {
         if (data == null) {
             return Optional.empty();
         }
-        return Optional.of(factory.createSubMessageMass(data.getId()));
+        MessageMass mass = getMass(data.getMainId());
+        return Optional.of(factory.createSubMessageMass(data.getId(), mass.data().getSpType(), mass.data().getMessageType()));
     }
 
     public List<SubMass> listByMainId(Long mainId) {
         return dao.selectByMainId(mainId)
                 .stream()
-                .map(data -> factory.createSubMessageMass(data.getId()))
+                .map(data -> {
+                    MessageMass mass = getMass(data.getMainId());
+                    return factory.createSubMessageMass(data.getId(), mass.data().getSpType(), mass.data().getMessageType());
+                })
                 .collect(Collectors.toList());
+    }
+
+    private MessageMass getMass(long id) {
+        return messageMassRepo.get(id)
+                .orElseThrow(() -> new MessageMassRepo.NotFoundException(id));
     }
 }

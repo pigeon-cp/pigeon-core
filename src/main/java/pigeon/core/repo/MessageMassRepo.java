@@ -1,9 +1,11 @@
 package pigeon.core.repo;
 
+import com.github.taccisum.domain.core.exception.DataNotFoundException;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
+import org.springframework.stereotype.Component;
 import pigeon.core.dao.MessageMassDAO;
 import pigeon.core.data.MessageMassDO;
 import pigeon.core.entity.core.MessageMass;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.Optional;
@@ -31,5 +33,12 @@ public class MessageMassRepo {
         data.setStatus(MessageMass.Status.CREATING);
         Long id = dao.insert(data);
         return factory.createMessageMass(id, data.getType(), data.getSpType(), data.getMessageType());
+    }
+
+    @ErrorCode("MASS.NOT_FOUND")
+    public static class NotFoundException extends DataNotFoundException {
+        public NotFoundException(long id) {
+            super("MessageMass", id);
+        }
     }
 }

@@ -16,6 +16,7 @@ import java.util.List;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @see MessageMass
  * @since 0.2
+ * @deprecated 应通过实现 sub mass 的子类来解决 raw 群发的问题
  */
 public interface RawMessageDeliverer {
     /**
