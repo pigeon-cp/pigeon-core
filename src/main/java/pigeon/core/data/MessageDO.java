@@ -1,20 +1,14 @@
 package pigeon.core.data;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
-import pigeon.core.entity.core.Message;
 import lombok.Data;
+import pigeon.core.entity.core.Message;
 
 /**
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
  */
 @Data
-@TableName("message")
-public class MessageDO {
-    @TableId(type = IdType.AUTO)
-    private Long id;
+public abstract class MessageDO implements DataObject<Long> {
     /**
      * 发送人
      */

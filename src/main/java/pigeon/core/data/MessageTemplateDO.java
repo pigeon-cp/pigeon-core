@@ -1,8 +1,5 @@
 package pigeon.core.data;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 /**
@@ -10,10 +7,7 @@ import lombok.Data;
  * @since 0.1
  */
 @Data
-@TableName("message_template")
-public class MessageTemplateDO {
-    @TableId(type = IdType.AUTO)
-    private Long id;
+public abstract class MessageTemplateDO implements DataObject<Long> {
     /**
      * 模板消息类型
      */

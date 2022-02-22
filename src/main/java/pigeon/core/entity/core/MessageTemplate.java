@@ -3,6 +3,7 @@ package pigeon.core.entity.core;
 import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
+import pigeon.core.dao.MessageDAO;
 import pigeon.core.dao.MessageTemplateDAO;
 import pigeon.core.data.MessageDO;
 import pigeon.core.data.MessageTemplateDO;
@@ -45,6 +46,8 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     protected Logger log = LoggerFactory.getLogger(this.getClass());
     @Resource
     private MessageTemplateDAO dao;
+    @Resource
+    private MessageDAO messageDAO;
     @Resource
     protected UserRepo userRepo;
     @Resource
@@ -116,7 +119,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      */
     public MessageDO initMessageInMemory(String sender, User user, Object params, String signature, String ext) throws InitMessageException {
         MessageTemplateDO data = this.data();
-        MessageDO o = new MessageDO();
+        MessageDO o = messageDAO.newEmptyDataObject();
         o.setType(this.getMessageType());
         o.setSpType(data.getSpType());
         o.setSpAccountId(data.getSpAccountId());
