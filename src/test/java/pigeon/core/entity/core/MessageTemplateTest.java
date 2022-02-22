@@ -46,7 +46,7 @@ class MessageTemplateTest {
         @DisplayName("index")
         void index() {
             Message message = mock(Message.class);
-            Mockito.doReturn(new MessageTemplateDO()).when(template).data();
+            Mockito.doReturn(mock(MessageTemplateDO.class)).when(template).data();
             when(messageRepo.create(any())).thenAnswer((Answer<Message>) invocationOnMock -> {
                 MessageDO o = invocationOnMock.getArgument(0, MessageDO.class);
                 doReturn(o).when(message).data();

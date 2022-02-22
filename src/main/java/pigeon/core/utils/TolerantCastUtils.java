@@ -9,7 +9,18 @@ import java.util.Map;
  */
 public abstract class TolerantCastUtils {
     /**
+     * <pre>
      * Object 转 Array，支持传入数组、集合、Map、JSON 字符串，普通字符串（英文逗号分割），转换失败时将返回空数组
+     *
+     * 示例：
+     * - String[]{"1", "2", "3"} -> ["1", "2", "3"]
+     * - Set("1", "2", "3") -> ["1", "2", "3"]
+     * - List("1", "2", "3") -> ["1", "2", "3"]
+     * - Map(k1:"1", k2:"2", k3:"3") -> ["1", "2", "3"]
+     * - String("[\"1\",\"2\",\"3\"]") -> ["1", "2", "3"]
+     * - String("{\"k1\": \"1\", \"k2\": \"2\", \"k3\": \"3\"}") -> ["1", "2", "3"]
+     * - String("1,2,3") -> ["1", "2", "3"]
+     * </pre>
      */
     public static Object[] toArray(Object obj) {
         Object[] vars = null;
@@ -26,6 +37,8 @@ public abstract class TolerantCastUtils {
             String str = (String) obj;
             if (str.charAt(0) == '[' && str.charAt(str.length() - 1) == ']') {
                 vars = JsonUtils.parse(str, String[].class);
+            } else if (str.charAt(0) == '{' && str.charAt(str.length() - 1) == '}') {
+                vars = JsonUtils.parse(str, Map.class).values().toArray(new Object[0]);
             } else {
                 vars = str.split(",");
             }

@@ -25,7 +25,7 @@ class TolerantCastUtilsTest {
     }
 
     @ParameterizedTest
-    @DisplayName("传入数组、集合、Map、JSON 数组、逗号分割字符串均能解析")
+    @DisplayName("传入数组、集合、Map、JSON 数组、JSON 对象、逗号分割字符串均能解析")
     @MethodSource("indexSource")
     void index(Object obj) {
         Object[] arr = TolerantCastUtils.toArray(obj);
@@ -33,7 +33,7 @@ class TolerantCastUtilsTest {
         assertThat(arr).containsOnly("1", "2", "3");
     }
 
-    static Object indexSource() {
+    static Object[] indexSource() {
         Map<Integer, String> map = Maps.newHashMap(0, "1");
         map.put(1, "2");
         map.put(2, "3");
@@ -43,6 +43,7 @@ class TolerantCastUtilsTest {
                 Lists.newArrayList("1", "2", "3"),
                 map,
                 "[\"1\",\"2\",\"3\"]",
+                "{\"k1\": \"1\", \"k2\": \"2\", \"k3\": \"3\"}",
                 "[1,2,3]",
                 "1,2,3"
         };
@@ -57,7 +58,7 @@ class TolerantCastUtilsTest {
         assertThat(arr.length).isEqualTo(0);
     }
 
-    static Object failSource() {
+    static Object[] failSource() {
         return new Object[]{
                 null,
                 new Long(1L),

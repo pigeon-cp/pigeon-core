@@ -58,7 +58,7 @@ class MessageTest {
         @Test
         @DisplayName("必须关联模板时 template id 不能为空")
         void shouldHaveTemplateId() throws Exception {
-            doReturn(new MessageDO()).when(message).data();
+            doReturn(mock(MessageDO.class)).when(message).data();
             doReturn(true).when(message).shouldRelateTemplate();
 
             Assert.assertThrows(Message.DeliverException.class, () -> {
@@ -70,7 +70,7 @@ class MessageTest {
         @ValueSource(booleans = {true, false})
         @DisplayName("实时发送的消息直接标记发送结果")
         void markSentIfRealTimeMessage(boolean success) throws Exception {
-            doReturn(new MessageDO()).when(message).data();
+            doReturn(mock(MessageDO.class)).when(message).data();
             doReturn(true).when(message).isRealTime();
 
             if (success) {
