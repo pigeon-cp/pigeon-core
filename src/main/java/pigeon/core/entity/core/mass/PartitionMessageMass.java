@@ -2,11 +2,13 @@ package pigeon.core.entity.core.mass;
 
 import pigeon.core.entity.core.PartitionCapable;
 import pigeon.core.entity.core.SubMass;
+import pigeon.core.repo.SubMassRepo;
 import pigeon.core.utils.MagnitudeUtils;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
@@ -27,6 +29,9 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
      */
     public static final int DEFAULT_SUB_MASS_SIZE = 500;
     private static final String TIMER_MASS_PREPARATION = "mass.preparation";
+
+    @Resource
+    protected SubMassRepo subMassRepo;
 
     public PartitionMessageMass(Long id) {
         super(id);

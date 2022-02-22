@@ -2,20 +2,18 @@ package pigeon.core.entity.core.mass;
 
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.exception.DataErrorException;
-import pigeon.core.dao.MessageDAO;
-import pigeon.core.dao.MessageMassDAO;
-import pigeon.core.data.MessageMassDO;
-import pigeon.core.entity.core.*;
-import pigeon.core.entity.core.*;
-import pigeon.core.repo.MassTacticRepo;
-import pigeon.core.repo.MessageRepo;
-import pigeon.core.repo.SubMassRepo;
-import pigeon.core.utils.MagnitudeUtils;
 import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.Metrics;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pigeon.core.dao.MessageDAO;
+import pigeon.core.dao.MessageMassDAO;
+import pigeon.core.data.MessageMassDO;
+import pigeon.core.entity.core.*;
+import pigeon.core.repo.MassTacticRepo;
+import pigeon.core.repo.MessageRepo;
+import pigeon.core.utils.MagnitudeUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -32,9 +30,7 @@ import java.util.stream.Collectors;
 public abstract class AbstractMessageMass extends Entity.Base<Long> implements MessageMass {
     protected final Logger log = LoggerFactory.getLogger(this.getClass());
     @Resource
-    MessageMassDAO dao;
-    @Resource
-    protected SubMassRepo subMassRepo;
+    protected MessageMassDAO dao;
     @Resource
     protected MessageRepo messageRepo;
     @Resource
