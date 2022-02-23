@@ -1,7 +1,7 @@
 package pigeon.core.data;
 
-import pigeon.core.entity.core.MessageMass;
 import lombok.Data;
+import pigeon.core.entity.core.MessageMass;
 
 /**
  * @author taccisum - liaojinfeng6938@dingtalk.com
@@ -59,4 +59,8 @@ public abstract class MessageMassDO implements DataObject<Long> {
      * 推送错误数量
      */
     private Integer errorCount;
+    /**
+     * 扩展信息
+     */
+    private String ext;
 }
