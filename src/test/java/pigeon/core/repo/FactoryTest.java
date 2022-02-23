@@ -80,7 +80,7 @@ class FactoryTest {
             List<FooFactory> factories = new ArrayList<>();
             when(pluginManager.getExtensions(FooFactory.class)).thenReturn(factories);
 
-            Assert.assertThrows(UnsupportedOperationException.class, () -> {
+            Assert.assertThrows(Factory.NoSuitableFactoryFoundException.class, () -> {
                 factory.create(1001L, null, FooFactory.class);
             });
 
@@ -90,7 +90,7 @@ class FactoryTest {
                     return false;
                 }
             });
-            Assert.assertThrows(UnsupportedOperationException.class, () -> {
+            Assert.assertThrows(Factory.NoSuitableFactoryFoundException.class, () -> {
                 factory.create(1001L, null, FooFactory.class);
             });
         }
