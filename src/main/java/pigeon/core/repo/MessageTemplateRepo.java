@@ -2,11 +2,11 @@ package pigeon.core.repo;
 
 import com.github.taccisum.domain.core.exception.DataNotFoundException;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import pigeon.core.dao.MessageTemplateDAO;
 import pigeon.core.data.MessageTemplateDO;
 import pigeon.core.entity.core.MessageTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
@@ -20,6 +20,11 @@ public class MessageTemplateRepo {
     private MessageTemplateDAO mapper;
     @Autowired
     private Factory factory;
+
+    public MessageTemplate create(MessageTemplateDO data) {
+        mapper.insert(data);
+        return factory.createMessageTemplate(data.getId(), data.getType(), data.getSpType());
+    }
 
     public Optional<MessageTemplate> get(long id) {
         MessageTemplateDO data = mapper.selectById(id);
