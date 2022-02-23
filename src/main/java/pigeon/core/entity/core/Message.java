@@ -4,6 +4,13 @@ import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
+import lombok.Getter;
+import lombok.Setter;
+import org.apache.commons.lang.NotImplementedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pigeon.core.dao.MessageDAO;
 import pigeon.core.data.MessageDO;
 import pigeon.core.entity.core.holder.MessageDelivererHolder;
@@ -12,13 +19,6 @@ import pigeon.core.repo.MessageTemplateRepo;
 import pigeon.core.repo.ServiceProviderRepo;
 import pigeon.core.repo.ThirdAccountRepo;
 import pigeon.core.utils.InfoUtils;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Timer;
-import lombok.Getter;
-import lombok.Setter;
-import org.apache.commons.lang.NotImplementedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Resource;
 
@@ -96,8 +96,9 @@ public abstract class Message extends Entity.Base<Long> {
                 log.debug("消息 {} 为实时消息，将直接标记发送结果", this.id());
                 if (msg != null) {
                     this.markSent(success, msg);
+                } else {
+                    this.markSent(success);
                 }
-                this.markSent(success);
             } else {
                 log.debug("消息 {} 为非实时消息，仅标记投递结果", this.id());
                 this.markDelivered(success, msg);
