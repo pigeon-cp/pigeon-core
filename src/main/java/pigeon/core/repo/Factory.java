@@ -1,13 +1,14 @@
 package pigeon.core.repo;
 
+import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
+import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import org.pf4j.PluginManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pigeon.core.entity.core.*;
-import pigeon.core.entity.core.mass.AbstractSubMass;
 import pigeon.core.repo.factory.*;
 
 import java.io.Serializable;
@@ -131,7 +132,7 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
                 return factory.create(id, criteria);
             }
 
-            throw new UnsupportedOperationException(String.format("Not any factory matched(for id %s, criteria: %s. expected factory type: %s).", id, criteria, type.getSimpleName()));
+            throw new NoSuitableFactoryFoundException(id, criteria, type);
         });
     }
 
@@ -145,6 +146,35 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
             }
         }
 
-        throw new UnsupportedOperationException(String.format("Not any extend factory matched(for id %s, criteria: %s. expected factory type: %s).", id, criteria, type.getSimpleName()));
+        throw new NoSuitableFactoryFoundException(id, criteria, type);
+    }
+
+    @ErrorCode("FACTORY")
+    public static class FactoryException extends DomainException {
+        public FactoryException(String message) {
+            super(message);
+        }
+    }
+
+    @ErrorCode(value = "CREATE_ENTITY", inherited = true)
+    public static class CreateEntityException extends DomainException {
+        public CreateEntityException(String message) {
+            super(message);
+        }
+
+        public CreateEntityException(Object id, Object criteria, Class<? extends EntityFactory> type) {
+            this(String.format("Factory %s fail to create entity for id %s, criteria: %s.", type.getSimpleName(), id, criteria));
+        }
+    }
+
+    @ErrorCode(value = "NOT_SUITABLE", inherited = true)
+    public static class NoSuitableFactoryFoundException extends DomainException {
+        public NoSuitableFactoryFoundException(String message) {
+            super(message);
+        }
+
+        public NoSuitableFactoryFoundException(Object id, Object criteria, Class<? extends EntityFactory> type) {
+            this(String.format("No any suitable factory found for id %s, criteria: %s. expected factory type: %s.", id, criteria, type.getSimpleName()));
+        }
     }
 }
