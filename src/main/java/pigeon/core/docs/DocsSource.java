@@ -12,7 +12,7 @@ public interface DocsSource<D extends Description> {
     D toDocs();
 
     interface Factory extends DocsSource<FactoryDesc> {
-        interface Criteria extends DocsSource<FactoryDesc.CriteriaDesc> {
+        interface Matcher extends DocsSource<FactoryDesc.MatcherDesc> {
         }
     }
 }

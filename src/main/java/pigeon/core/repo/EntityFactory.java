@@ -1,6 +1,7 @@
 package pigeon.core.repo;
 
 import com.github.taccisum.domain.core.Entity;
+import org.apache.commons.lang.NotImplementedException;
 import org.pf4j.ExtensionPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
@@ -52,41 +53,41 @@ public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C>
         return 0;
     }
 
-    abstract class Base<ID extends Serializable, E extends Entity<ID>, C> implements
+    abstract class Base<ID extends Serializable, E extends Entity<ID>, C, M> implements
             EntityFactory<ID, E, C>,
             DocsSource.Factory {
         @Override
         public boolean match(ID id, C criteria) {
-            return this.getCriteriaSet().match(criteria);
+            return this.getMatcherSet().match(criteria);
         }
 
         /**
-         * 匹配的条件集
+         * 获取匹配器集合
          */
-        public CriteriaSet<C> getCriteriaSet() {
-            return new CriteriaSet.None<>();
+        public MatcherSet<M, C> getMatcherSet() {
+            return new MatcherSet.None<>();
         }
 
         @Override
         public FactoryDesc toDocs() {
-            return this.getCriteriaSet().toDocs();
+            return this.getMatcherSet().toDocs();
         }
     }
 
     /**
      * factory 匹配条件集
      */
-    interface CriteriaSet<C> extends DocsSource<FactoryDesc> {
-        Set<C> get();
+    interface MatcherSet<M, C> extends DocsSource<FactoryDesc> {
+        Set<M> get();
 
         /**
          * 是否能匹配上给定条件
          */
         boolean match(C c);
 
-        class None<C> implements CriteriaSet<C> {
+        class None<M, C> implements MatcherSet<M, C> {
             @Override
-            public Set<C> get() {
+            public Set<M> get() {
                 return Collections.EMPTY_SET;
             }
 
@@ -102,27 +103,24 @@ public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C>
             }
         }
 
-        /**
-         * TODO: not implement
-         *
-         * @param <C>
-         */
-        class Any<C> implements CriteriaSet<C> {
-            private Set<C> set = new LinkedHashSet<>();
+        class Any<M, C> implements MatcherSet<M, C> {
+            private Set<M> set = new LinkedHashSet<>();
 
-            public Any<C> add(C criteria) {
-                set.add(criteria);
+            public Any<M, C> add(M matcher) {
+                set.add(matcher);
                 return this;
             }
 
             @Override
-            public Set<C> get() {
+            public Set<M> get() {
                 return set;
             }
 
             @Override
             public boolean match(C c) {
-                return this.set.contains(c);
+                // TODO::
+//                return this.set.contains(c);
+                throw new NotImplementedException();
             }
 
             @Override
@@ -131,12 +129,15 @@ public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C>
                     return null;
                 }
                 String val = this.set.stream()
-                        .map(c -> {
-                            if (c instanceof DocsSource.Factory.Criteria) {
-                                FactoryDesc.CriteriaDesc docs = ((Factory.Criteria) c).toDocs();
-                                return String.format("%s(%s)", docs.value(), docs.desc());
+                        .map(matcher -> {
+                            if (matcher instanceof DocsSource.Factory.Matcher) {
+                                FactoryDesc.MatcherDesc docs = ((DocsSource.Factory.Matcher) matcher).toDocs();
+                                if (docs.desc() != null) {
+                                    return String.format("%s(%s)", docs.value(), docs.desc());
+                                }
+                                return docs.value();
                             } else {
-                                return c.toString();
+                                return matcher.toString();
                             }
                         })
                         .reduce((p, c) -> {
@@ -147,9 +148,9 @@ public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C>
             }
         }
 
-        class All<C> implements CriteriaSet<C> {
+        class All<M, C> implements MatcherSet<M, C> {
             @Override
-            public Set<C> get() {
+            public Set<M> get() {
                 return null;
             }
 

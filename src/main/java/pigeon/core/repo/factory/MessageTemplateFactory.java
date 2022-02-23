@@ -16,24 +16,36 @@ import pigeon.core.repo.factory.MessageTemplateFactory.Criteria;
 public interface MessageTemplateFactory extends EntityFactory<Long, MessageTemplate, Criteria> {
     @Data
     @Accessors(chain = true)
-    class Criteria implements DocsSource.Factory.Criteria {
+    class Criteria {
         private String type;
         private String spType;
-        private String desc;
 
         public Criteria(String type, String spType) {
             this.type = type;
             this.spType = spType;
         }
+    }
+
+    @Data
+    @Accessors(chain = true, fluent = true)
+    class Matcher implements DocsSource.Factory.Matcher {
+        private String type;
+        private String spType;
+        private String desc;
+
+        public Matcher(String type, String spType) {
+            this.type = type;
+            this.spType = spType;
+        }
 
         @Override
-        public FactoryDesc.CriteriaDesc toDocs() {
-            return new FactoryDesc.CriteriaDesc(String.format("type: %s, sp: %s", type, spType))
+        public FactoryDesc.MatcherDesc toDocs() {
+            return new FactoryDesc.MatcherDesc(String.format("type: %s, sp: %s", type, spType))
                     .desc(desc);
         }
     }
 
-    abstract class Base extends EntityFactory.Base<Long, MessageTemplate, MessageTemplateFactory.Criteria> implements MessageTemplateFactory {
+    abstract class Base extends EntityFactory.Base<Long, MessageTemplate, MessageTemplateFactory.Criteria, MessageTemplateFactory.Matcher> implements MessageTemplateFactory {
     }
 
     @Extension
@@ -44,8 +56,8 @@ public interface MessageTemplateFactory extends EntityFactory<Long, MessageTempl
         }
 
         @Override
-        public CriteriaSet<MessageTemplateFactory.Criteria> getCriteriaSet() {
-            return new CriteriaSet.All<>();
+        public MatcherSet<MessageTemplateFactory.Matcher, MessageTemplateFactory.Criteria> getMatcherSet() {
+            return new MatcherSet.All<>();
         }
 
         @Override

@@ -25,11 +25,11 @@ class FactoryDesc implements Description {
      */
     @Data
     @Accessors(chain = true, fluent = true)
-    public static class CriteriaDesc implements Description {
+    public static class MatcherDesc implements Description {
         private String value;
         private String desc;
 
-        public CriteriaDesc(String value) {
+        public MatcherDesc(String value) {
             this.value = value;
         }
     }

@@ -23,7 +23,7 @@ class EntityFactoryTest {
             @Test
             @DisplayName("index")
             void index() {
-                EntityFactory.CriteriaSet.Any<String> any = new EntityFactory.CriteriaSet.Any<>();
+                EntityFactory.MatcherSet.Any<String, String> any = new EntityFactory.MatcherSet.Any<>();
                 any.add("c1");
                 any.add("c2");
                 any.add("c3");
@@ -34,10 +34,10 @@ class EntityFactoryTest {
             @Test
             @DisplayName("obj")
             void obj() {
-                EntityFactory.CriteriaSet.Any<FooCriteria> any = new EntityFactory.CriteriaSet.Any<>();
-                any.add(new FooCriteria("c1"));
-                any.add(new FooCriteria("c2"));
-                any.add(new FooCriteria("c3"));
+                EntityFactory.MatcherSet.Any<FooMatcher, String> any = new EntityFactory.MatcherSet.Any<>();
+                any.add(new FooMatcher("c1"));
+                any.add(new FooMatcher("c2"));
+                any.add(new FooMatcher("c3"));
                 FactoryDesc desc = any.toDocs();
                 assertThat(desc.value()).isEqualTo("c1 | c2 | c3");
             }
@@ -45,18 +45,18 @@ class EntityFactoryTest {
             @Test
             @DisplayName("docsSource")
             void docsSource() {
-                EntityFactory.CriteriaSet.Any<FooCriteria> any = new EntityFactory.CriteriaSet.Any<>();
-                any.add(new BarCriteria("c1"));
-                any.add(new BarCriteria("c2"));
-                any.add(new BarCriteria("c3"));
+                EntityFactory.MatcherSet.Any<FooMatcher, String> any = new EntityFactory.MatcherSet.Any<>();
+                any.add(new BarMatcher("c1"));
+                any.add(new BarMatcher("c2"));
+                any.add(new BarMatcher("c3"));
                 FactoryDesc desc = any.toDocs();
                 assertThat(desc.value()).isEqualTo("val:c1 | val:c2 | val:c3");
             }
 
-            class FooCriteria {
+            class FooMatcher {
                 String val;
 
-                public FooCriteria(String val) {
+                public FooMatcher(String val) {
                     this.val = val;
                 }
 
@@ -66,14 +66,14 @@ class EntityFactoryTest {
                 }
             }
 
-            class BarCriteria extends FooCriteria implements DocsSource.Factory.Criteria {
-                public BarCriteria(String val) {
+            class BarMatcher extends FooMatcher implements DocsSource.Factory.Matcher {
+                public BarMatcher(String val) {
                     super(val);
                 }
 
                 @Override
-                public FactoryDesc.CriteriaDesc toDocs() {
-                    return new FactoryDesc.CriteriaDesc("val:" + val);
+                public FactoryDesc.MatcherDesc toDocs() {
+                    return new FactoryDesc.MatcherDesc("val:" + val);
                 }
             }
         }
