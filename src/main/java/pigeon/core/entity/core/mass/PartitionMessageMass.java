@@ -54,25 +54,29 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
                 .register(Metrics.globalRegistry);
 
         timer.record(() -> {
-            // TODO:: 先 partition，再并行执行，否则可能在并行线程中获取不到数据？
-            if (parallel) {
-                // TODO:: 事务问题
-                POOL.invoke(ForkJoinTask.adapt(() -> {
-                    List<SubMass> partitions = this.partition();
-                    partitions.parallelStream()
-                            .forEach(sub -> {
-                                try {
-                                    sub.prepare();
-                                } catch (Exception e) {
-                                    log.error(String.format("sub mass %d prepare 发生错误", sub.id()), e);
-                                }
-                            });
-                }));
-            } else {
-                this.partition().forEach(SubMass::prepare);
-            }
+            doPrepare(parallel);
             this.markPrepared();
         });
+    }
+
+    protected void doPrepare(boolean parallel) {
+        // TODO:: 先 partition，再并行执行，否则可能在并行线程中获取不到数据？
+        if (parallel) {
+            // TODO:: 事务问题
+            POOL.invoke(ForkJoinTask.adapt(() -> {
+                List<SubMass> partitions = this.partition();
+                partitions.parallelStream()
+                        .forEach(sub -> {
+                            try {
+                                sub.prepare();
+                            } catch (Exception e) {
+                                log.error(String.format("sub mass %d prepare 发生错误", sub.id()), e);
+                            }
+                        });
+            }));
+        } else {
+            this.partition().forEach(SubMass::prepare);
+        }
     }
 
     @Override

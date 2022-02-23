@@ -100,6 +100,9 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
         }
     }
 
+    /**
+     * @return 发送失败的数量
+     */
     protected abstract int doDeliver(Messages messages);
 
     @Override
