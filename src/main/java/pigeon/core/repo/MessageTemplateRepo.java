@@ -17,17 +17,17 @@ import java.util.Optional;
 @Component
 public class MessageTemplateRepo {
     @Autowired
-    private MessageTemplateDAO mapper;
+    private MessageTemplateDAO dao;
     @Autowired
     private Factory factory;
 
     public MessageTemplate create(MessageTemplateDO data) {
-        mapper.insert(data);
+        dao.insert(data);
         return factory.createMessageTemplate(data.getId(), data.getType(), data.getSpType());
     }
 
     public Optional<MessageTemplate> get(long id) {
-        MessageTemplateDO data = mapper.selectById(id);
+        MessageTemplateDO data = dao.selectById(id);
         if (data == null) {
             return Optional.empty();
         }
