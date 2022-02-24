@@ -3,10 +3,10 @@ package pigeon.core.repo;
 import com.github.taccisum.domain.core.exception.DataErrorException;
 import com.github.taccisum.domain.core.exception.DataNotFoundException;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
+import org.springframework.stereotype.Component;
 import pigeon.core.dao.ThirdAccountDAO;
 import pigeon.core.data.ThirdAccountDO;
 import pigeon.core.entity.core.ThirdAccount;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -22,6 +22,11 @@ public class ThirdAccountRepo {
     private ThirdAccountDAO dao;
     @Resource
     private Factory factory;
+
+    public ThirdAccount create(ThirdAccountDO data) {
+        dao.insert(data);
+        return factory.createThirdAccount(data.getId(), data.getUsername(), data.getType(), data.getSpType());
+    }
 
     public Optional<ThirdAccount> getByUsername(String name) {
         List<? extends ThirdAccountDO> ls = dao.selectByUsername(name);
