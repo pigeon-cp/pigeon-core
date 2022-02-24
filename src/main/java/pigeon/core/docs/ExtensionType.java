@@ -12,6 +12,10 @@ public enum ExtensionType {
      */
     MESSAGE_TYPE,
     /**
+     * 三方账号类型
+     */
+    THIRD_ACCOUNT_TYPE,
+    /**
      * 服务提供商类型
      */
     SERVICE_PROVIDER_TYPE,

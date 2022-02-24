@@ -18,7 +18,12 @@ public class CoreDocs implements PluginDocs {
     }
 
     @Override
+    public List<String> listExtendedThirdAccountType() {
+        return Lists.newArrayList("DEFAULT", "MAIL_SERVER");
+    }
+
+    @Override
     public List<String> listExtendedSpType() {
-        return Lists.newArrayList("PIGEON");
+        return Lists.newArrayList("PIGEON", "DEFAULT");
     }
 }

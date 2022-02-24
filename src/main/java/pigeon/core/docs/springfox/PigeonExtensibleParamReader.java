@@ -69,6 +69,8 @@ public class PigeonExtensibleParamReader implements ParameterBuilderPlugin, Mode
                     switch (annotation.value()) {
                         case MESSAGE_TYPE:
                             return doc.listExtendedMessageType();
+                        case THIRD_ACCOUNT_TYPE:
+                            return doc.listExtendedThirdAccountType();
                         case SERVICE_PROVIDER_TYPE:
                             return doc.listExtendedSpType();
                         default:

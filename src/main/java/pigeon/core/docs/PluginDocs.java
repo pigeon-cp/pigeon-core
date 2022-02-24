@@ -19,6 +19,13 @@ public interface PluginDocs extends ExtensionPoint {
     }
 
     /**
+     * 返回扩展的三方账号类型
+     */
+    default List<String> listExtendedThirdAccountType() {
+        return null;
+    }
+
+    /**
      * 返回扩展的服务提供商类型
      */
     default List<String> listExtendedSpType() {
