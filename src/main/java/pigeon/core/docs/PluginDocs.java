@@ -1,7 +1,8 @@
 package pigeon.core.docs;
 
-import lombok.Getter;
 import org.pf4j.ExtensionPoint;
+
+import java.util.List;
 
 /**
  * 插件文档
@@ -10,14 +11,17 @@ import org.pf4j.ExtensionPoint;
  * @since 0.2
  */
 public interface PluginDocs extends ExtensionPoint {
-    String getPluginId();
+    /**
+     * 返回扩展的消息类型
+     */
+    default List<String> listExtendedMessageType() {
+        return null;
+    }
 
-    abstract class Base implements PluginDocs {
-        @Getter
-        private String pluginId;
-
-        public Base(String pluginId) {
-            this.pluginId = pluginId;
-        }
+    /**
+     * 返回扩展的服务提供商类型
+     */
+    default List<String> listExtendedSpType() {
+        return null;
     }
 }
