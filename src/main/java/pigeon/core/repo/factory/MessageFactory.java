@@ -8,6 +8,7 @@ import pigeon.core.entity.core.message.Mail;
 import pigeon.core.repo.EntityFactory;
 import lombok.Data;
 import org.pf4j.Extension;
+import pigeon.core.repo.Factory;
 
 import java.util.Optional;
 
@@ -40,7 +41,7 @@ public interface MessageFactory extends EntityFactory<Long, Message, MessageFact
                 case "DUMMY":
                     return new DummyMessage(id);
                 default:
-                    throw new UnsupportedOperationException(type);
+                    throw new Factory.CreateEntityException("pigeon-core", id, criteria, MessageFactory.class);
             }
         }
 
@@ -59,7 +60,7 @@ public interface MessageFactory extends EntityFactory<Long, Message, MessageFact
                 case Message.Type.MAIL:
                     return new Mail.Default(id);
                 default:
-                    throw new UnsupportedOperationException(type);
+                    throw new Factory.CreateEntityException("pigeon-core", id, criteria, MessageFactory.class);
             }
         }
 
