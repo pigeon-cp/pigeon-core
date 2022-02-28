@@ -1,12 +1,6 @@
 package pigeon.core.entity.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import pigeon.core.data.MessageDO;
-import pigeon.core.data.MessageTemplateDO;
-import pigeon.core.repo.MessageRepo;
-import pigeon.core.utils.JsonUtils;
-import pigeon.core.valueobj.MessageInfo;
-import pigeon.core.valueobj.Source;
 import com.google.common.collect.Lists;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang.NotImplementedException;
@@ -17,6 +11,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import pigeon.core.dao.MessageDAO;
+import pigeon.core.data.MessageDO;
+import pigeon.core.data.MessageTemplateDO;
+import pigeon.core.repo.MessageRepo;
+import pigeon.core.utils.JsonUtils;
+import pigeon.core.valueobj.MessageInfo;
+import pigeon.core.valueobj.Source;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ class MessageTemplateTest {
         messageRepo = mock(MessageRepo.class);
         template = spy(new FooTemplate(1L));
         template.messageRepo = messageRepo;
+        template.messageDAO = mock(MessageDAO.class);
         JsonUtils.setObjectMapper(new ObjectMapper());
     }
 
@@ -47,6 +49,7 @@ class MessageTemplateTest {
         void index() {
             Message message = mock(Message.class);
             Mockito.doReturn(mock(MessageTemplateDO.class)).when(template).data();
+            doReturn(new MessageTest.MessageDOImpl()).when(template.messageDAO).newEmptyDataObject();
             when(messageRepo.create(any())).thenAnswer((Answer<Message>) invocationOnMock -> {
                 MessageDO o = invocationOnMock.getArgument(0, MessageDO.class);
                 doReturn(o).when(message).data();

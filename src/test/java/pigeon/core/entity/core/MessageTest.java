@@ -119,7 +119,7 @@ class MessageTest {
         }
     }
 
-    private static class MessageDOImpl extends MessageDO {
+    public static class MessageDOImpl extends MessageDO {
         @Getter
         @Setter
         private Long id;

@@ -47,7 +47,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     @Resource
     private MessageTemplateDAO dao;
     @Resource
-    private MessageDAO messageDAO;
+    MessageDAO messageDAO;
     @Resource
     protected UserRepo userRepo;
     @Resource

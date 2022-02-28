@@ -49,7 +49,11 @@ public abstract class MassTactic extends Entity.Base<Long> {
     }
 
     public MassTacticDO data() {
-        return this.dao.selectById(this.id());
+        MassTacticDO data = this.dao.selectById(this.id());
+        if (data == null) {
+            throw new DataErrorException("策略", this.id(), "不存在但实例化成功");
+        }
+        return data;
     }
 
     /**

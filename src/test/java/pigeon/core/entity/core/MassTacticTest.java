@@ -1,12 +1,9 @@
 package pigeon.core.entity.core;
 
-import pigeon.core.data.MassTacticDO;
 import org.junit.Assert;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
+import pigeon.core.data.MassTacticDO;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -26,6 +23,7 @@ class MassTacticTest {
         tactic = spy(new FooTactic(1L));
     }
 
+    @Disabled("#exec 已弃用")
     @Nested
     @DisplayName("#exec(...)")
     class ExecTest {
@@ -34,10 +32,11 @@ class MassTacticTest {
         void index() {
             Data data = new Data();
             doReturn(data).when(tactic).data();
+            doReturn(1).when(tactic).getSourceSize();
             MessageMass mass = mock(MessageMass.class);
             doReturn(false).when(tactic).isExecuting();
             doReturn(false).when(tactic).hasPrepared();
-            doReturn(mass).when(tactic).doPrepare();
+            doReturn(mass).when(tactic).prepare(anyBoolean());
 
             tactic.exec();
             verify(tactic, times(1)).prepare();
@@ -49,6 +48,7 @@ class MassTacticTest {
         void execNotAllowIfNotTest() {
             Data data = new Data();
             doReturn(data).when(tactic).data();
+            doReturn(1).when(tactic).getSourceSize();
 
             // must test but not test
             data.setMustTest(true);
@@ -66,6 +66,7 @@ class MassTacticTest {
         }
     }
 
+    @Disabled("#prepare 已弃用")
     @Nested
     @DisplayName("#prepare(...)")
     class PrepareTest {
@@ -113,6 +114,7 @@ class MassTacticTest {
             tactic = Mockito.spy(new MassTactic.Default(1L));
         }
 
+        @Disabled("#doPrepare 已弃用")
         @Nested
         @DisplayName("#doPrepare(...)")
         class DoPrepareTest {
