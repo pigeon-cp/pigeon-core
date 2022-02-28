@@ -1,7 +1,5 @@
 package pigeon.core.entity.core;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,8 +11,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.pf4j.DefaultPluginManager;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import pigeon.core.dao.MessageDAO;
-import pigeon.core.data.MessageDO;
 import pigeon.core.entity.core.sp.MessageServiceProvider;
+import pigeon.core.impl.dao.data.MessageDOImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -117,12 +115,6 @@ class MessageTest {
         public MessageServiceProvider getServiceProvider() {
             return null;
         }
-    }
-
-    public static class MessageDOImpl extends MessageDO {
-        @Getter
-        @Setter
-        private Long id;
     }
 
     public static class DummyPluginManager extends DefaultPluginManager {

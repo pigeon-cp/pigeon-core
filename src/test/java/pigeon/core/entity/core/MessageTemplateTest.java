@@ -14,6 +14,7 @@ import org.mockito.stubbing.Answer;
 import pigeon.core.dao.MessageDAO;
 import pigeon.core.data.MessageDO;
 import pigeon.core.data.MessageTemplateDO;
+import pigeon.core.impl.dao.data.MessageDOImpl;
 import pigeon.core.repo.MessageRepo;
 import pigeon.core.utils.JsonUtils;
 import pigeon.core.valueobj.MessageInfo;
@@ -49,7 +50,7 @@ class MessageTemplateTest {
         void index() {
             Message message = mock(Message.class);
             Mockito.doReturn(mock(MessageTemplateDO.class)).when(template).data();
-            doReturn(new MessageTest.MessageDOImpl()).when(template.messageDAO).newEmptyDataObject();
+            doReturn(new MessageDOImpl()).when(template.messageDAO).newEmptyDataObject();
             when(messageRepo.create(any())).thenAnswer((Answer<Message>) invocationOnMock -> {
                 MessageDO o = invocationOnMock.getArgument(0, MessageDO.class);
                 doReturn(o).when(message).data();
