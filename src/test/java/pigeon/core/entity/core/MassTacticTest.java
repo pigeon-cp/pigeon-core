@@ -3,7 +3,7 @@ package pigeon.core.entity.core;
 import org.junit.Assert;
 import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
-import pigeon.core.data.MassTacticDO;
+import pigeon.core.impl.dao.data.MassTacticDOImpl;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -30,7 +30,7 @@ class MassTacticTest {
         @Test
         @DisplayName("index")
         void index() {
-            Data data = new Data();
+            MassTacticDOImpl data = new MassTacticDOImpl();
             doReturn(data).when(tactic).data();
             doReturn(1).when(tactic).getSourceSize();
             MessageMass mass = mock(MessageMass.class);
@@ -46,7 +46,7 @@ class MassTacticTest {
         @Test
         @DisplayName("未测试或未通过测试不允许执行")
         void execNotAllowIfNotTest() {
-            Data data = new Data();
+            MassTacticDOImpl data = new MassTacticDOImpl();
             doReturn(data).when(tactic).data();
             doReturn(1).when(tactic).getSourceSize();
 
@@ -121,7 +121,7 @@ class MassTacticTest {
             @Test
             @DisplayName("index")
             void index() {
-                doReturn(new Data()).when(tactic).data();
+                doReturn(new MassTacticDOImpl()).when(tactic).data();
                 MessageMass mass = mock(MessageMass.class);
                 doReturn(mass).when(tactic).newMass();
                 doReturn(mock(MessageTemplate.class)).when(tactic).getMessageTemplate();
@@ -142,17 +142,12 @@ class MassTacticTest {
         @Test
         @DisplayName("index")
         void index() {
-            Data data = new Data();
+            MassTacticDOImpl data = new MassTacticDOImpl();
             doReturn(data).when(tactic).data();
 
             data.setStatus(MassTactic.Status.EXECUTING);
             assertThat(tactic.isExecuting()).isTrue();
         }
-    }
-
-    @lombok.Data
-    class Data extends MassTacticDO {
-        private Long id;
     }
 
     class FooTactic extends MassTactic {
