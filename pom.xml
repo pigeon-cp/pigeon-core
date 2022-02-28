@@ -7,12 +7,12 @@
     <parent>
         <groupId>com.github.taccisum</groupId>
         <artifactId>pigeon-parent</artifactId>
-        <version>0.2-SNAPSHOT</version>
+        <version>0.1</version>
     </parent>
 
     <name>Pigeon Core</name>
     <artifactId>pigeon-core</artifactId>
-    <version>${project.parent.version}</version>
+    <version>0.2</version>
     <packaging>jar</packaging>
     <description>Defines core domain model and extension points(SPI) of pigeon service.</description>
 
