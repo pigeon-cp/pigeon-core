@@ -251,7 +251,7 @@ public abstract class AbstractSubMass extends Entity.Base<Long> implements SubMa
         }
     }
 
-    @ErrorCode(value = "SUB_MASS_OVER_MAX_SIZE", inherited = true)
+    @ErrorCode(value = "SUB_MASS_OVER_MAX_SIZE", description = "消息子集大小超过最大限制", inherited = true)
     public static class OverMaxSizeException extends DataErrorException {
         public OverMaxSizeException(String key, Object id, String field, String errVal, String expectVal) {
             super(key, id, field, errVal, expectVal);

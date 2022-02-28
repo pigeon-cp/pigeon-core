@@ -281,7 +281,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         }
     }
 
-    @ErrorCode("TEMPLATE.INIT_MESSAGE")
+    @ErrorCode(value = "TEMPLATE.INIT_MESSAGE", description = "通过模板创建消息失败")
     public static class InitMessageException extends DomainException {
         public InitMessageException(String reason) {
             super(String.format("通过模板创建消息失败，原因：%s", reason));
