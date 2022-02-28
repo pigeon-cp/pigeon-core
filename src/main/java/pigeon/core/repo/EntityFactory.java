@@ -22,23 +22,23 @@ import java.io.Serializable;
  */
 public interface EntityFactory<ID extends Serializable, E extends Entity<ID>, C> extends Ordered, ExtensionPoint {
     /**
-     * 创建实体
-     *
      * @param id       实体 id
      * @param criteria 参数
+     * @return 新建的实体
      */
     E create(ID id, C criteria);
 
     /**
-     * 匹配条件
+     * 条件是否匹配当前 factory
      *
      * @param id       实体 id
      * @param criteria 参数
+     * @return true: 匹配，false: 不匹配
      */
     boolean match(ID id, C criteria);
 
     /**
-     * 优先级，数字越小优先级越高
+     * @return factory 作用优先级，数字越小优先级越高
      */
     @Override
     default int getOrder() {

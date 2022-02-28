@@ -106,7 +106,7 @@ class MessageTest {
         }
 
         @Override
-        protected void doDelivery() throws Exception {
+        protected void doDelivery() {
 
         }
 

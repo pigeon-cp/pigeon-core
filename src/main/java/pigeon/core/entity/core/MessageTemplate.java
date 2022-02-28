@@ -2,6 +2,7 @@ package pigeon.core.entity.core;
 
 import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
+import com.github.taccisum.domain.core.exception.DataErrorException;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import com.google.common.collect.Sets;
 import io.micrometer.core.instrument.Metrics;
@@ -18,6 +19,7 @@ import pigeon.core.data.MessageDO;
 import pigeon.core.data.MessageTemplateDO;
 import pigeon.core.repo.MessageRepo;
 import pigeon.core.repo.ServiceProviderRepo;
+import pigeon.core.repo.ThirdAccountRepo;
 import pigeon.core.repo.UserRepo;
 import pigeon.core.utils.CSVUtils;
 import pigeon.core.utils.JsonUtils;
@@ -63,14 +65,37 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
         return dao.selectById(this.id());
     }
 
+    /**
+     * @param sender 发送人地址
+     * @param target 消息目标
+     * @param params 模板参数
+     * @return 新建的消息
+     * @throws MessageRepo.CreateMessageException 消息创建失败
+     */
     public Message initMessage(String sender, String target, Object params) throws MessageRepo.CreateMessageException {
         return this.initMessage(sender, new User.Dummy(target), params);
     }
 
+    /**
+     * @param sender 发送人地址
+     * @param user   消息目标用户
+     * @param params 模板参数
+     * @return 新建的消息
+     * @throws MessageRepo.CreateMessageException 消息创建失败
+     */
     public Message initMessage(String sender, User user, Object params) throws MessageRepo.CreateMessageException {
         return this.initMessage(sender, user, params, null, null);
     }
 
+    /**
+     * @param sender    发送人地址
+     * @param target    消息目标
+     * @param params    模板参数
+     * @param signature 消息签名
+     * @param ext       自定义拓展参数
+     * @return 新建的消息
+     * @throws MessageRepo.CreateMessageException 消息创建失败
+     */
     public Message initMessage(String sender, String target, Object params, String signature, String ext) throws MessageRepo.CreateMessageException {
         return this.initMessage(sender, new User.Dummy(target), params, signature, ext);
     }
@@ -83,22 +108,47 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param params    模板参数
      * @param signature 签名
      * @param ext       扩展参数
+     * @return 新建的消息
+     * @throws MessageRepo.CreateMessageException 消息创建失败
      */
     public Message initMessage(String sender, User user, Object params, String signature, String ext) throws MessageRepo.CreateMessageException {
         return messageRepo.create(initMessageInMemory(sender, user, params, signature, ext));
     }
 
     /**
+     * @param sender 发送人地址
+     * @param target 消息目标
+     * @param params 模板参数
+     * @return 构建的消息数据对象
+     * @throws InitMessageException 通过模板创建消息失败
      * @since 0.2
      */
     public MessageDO initMessageInMemory(String sender, String target, Object params) throws InitMessageException {
         return this.initMessageInMemory(sender, new User.Dummy(target), params);
     }
 
+    /**
+     * @param sender 发送人地址
+     * @param user   消息目标用户
+     * @param params 模板参数
+     * @return 构建的消息数据对象
+     * @throws InitMessageException 通过模板创建消息失败
+     * @since 0.2
+     */
     public MessageDO initMessageInMemory(String sender, User user, Object params) throws InitMessageException {
         return this.initMessageInMemory(sender, user, params, null, null);
     }
 
+    /**
+     * @param sender    发送人地址
+     * @param target    消息目标
+     * @param params    模板参数
+     * @param signature 消息签名
+     * @param ext       自定义拓展参数
+     * @return 构建的消息数据对象
+     * @throws InitMessageException 通过模板创建消息失败
+     * @since 0.2
+     */
     public MessageDO initMessageInMemory(String sender, String target, Object params, String signature, String ext) throws InitMessageException {
         return this.initMessageInMemory(sender, new User.Dummy(target), params, signature, ext);
     }
@@ -115,6 +165,8 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param params    模板参数
      * @param signature 消息签名
      * @param ext       自定义拓展参数
+     * @return 构建的消息数据对象
+     * @throws InitMessageException 通过模板创建消息失败
      * @since 0.2
      */
     public MessageDO initMessageInMemory(String sender, User user, Object params, String signature, String ext) throws InitMessageException {
@@ -148,6 +200,7 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * 获取模板占位符规则
      *
      * @param name 规则名称
+     * @return 占位符规则具体实现
      */
     protected PlaceHolderRule getPlaceHolderRule(String name) {
         Set<String> directKeys = Sets.newHashSet("DIRECT", "NONE", "REMOTE");
@@ -174,21 +227,40 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
 
     /**
      * 获取模板关联的服务商账号
+     *
+     * @return 模板关联的三方账号
      */
     public ThirdAccount getSpAccount() {
-        return this.getServiceProvider()
-                .getAccountOrThrow(this.data().getSpAccountId());
+        try {
+            return this.getServiceProvider()
+                    .getAccountOrThrow(this.data().getSpAccountId());
+        } catch (ThirdAccountRepo.NotFoundException e) {
+            throw new DataErrorException("消息模板", this.id(), "关联的三方账号不存在");
+        }
     }
 
     /**
      * 获取模板关联的消息类型
+     *
+     * @return 模板关联的消息类型
      */
     public abstract String getMessageType();
 
+    /**
+     * @param source 目标源
+     * @return 解析的信息 list
+     * @throws ResolveSourceException 通过模板解析消息源失败
+     */
     public List<MessageInfo> resolve(Source source) throws ResolveSourceException {
         return this.resolve(source, new MessageInfo());
     }
 
+    /**
+     * @param source 目标源
+     * @param def    缺省值
+     * @return 解析的信息 list
+     * @throws ResolveSourceException 通过模板解析消息源失败
+     */
     public List<MessageInfo> resolve(Source source, MessageInfo def) throws ResolveSourceException {
         return this.resolve(0, Integer.MAX_VALUE, source, def);
     }
@@ -200,8 +272,10 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
      * @param end    结束行（不包含）
      * @param source 目标源
      * @param def    缺省值（充当数据源中缺失的信息默认值）
+     * @return 解析的信息 list
+     * @throws ResolveSourceException 通过模板解析消息源失败
      */
-    public List<MessageInfo> resolve(Integer start, Integer end, Source source, MessageInfo def) {
+    public List<MessageInfo> resolve(Integer start, Integer end, Source source, MessageInfo def) throws ResolveSourceException {
         List<MessageInfo> targets = new ArrayList<>();
         Timer timer = Timer.builder("template.source.resolve")
                 .description("通过模板解析目标源")
@@ -240,10 +314,11 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
     }
 
     /**
-     * 解析行数据为目标实体
+     * 通过此模板解析 CSV 行数据为 {@link MessageInfo} 对象
      *
      * @param row 行数据
      * @param def 缺省值
+     * @return 解析结果
      */
     protected MessageInfo map(CSVRecord row, MessageInfo def) {
         MessageInfo info = new MessageInfo();
@@ -271,6 +346,9 @@ public abstract class MessageTemplate extends Entity.Base<Long> {
 
     /**
      * TODO:: rename
+     *
+     * @return account 列对应的 header 名
+     * @deprecated 后续可能会移除
      */
     protected abstract String getAccountHeaderName();
 

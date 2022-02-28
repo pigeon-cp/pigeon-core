@@ -1,11 +1,11 @@
 package pigeon.core.entity.core.message;
 
 import com.github.taccisum.domain.core.exception.DataErrorException;
+import org.apache.commons.lang.StringUtils;
 import pigeon.core.entity.core.Message;
 import pigeon.core.entity.core.ServiceProvider;
 import pigeon.core.entity.core.sp.MailServiceProvider;
 import pigeon.core.entity.core.sp.account.MailServerAccount;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * 邮件消息
@@ -100,7 +100,7 @@ public abstract class Mail extends Message {
         }
 
         @Override
-        protected void doDelivery() throws Exception {
+        protected void doDelivery() {
             MailServerAccount account = (MailServerAccount) this.getServiceProvider().getAccountOrThrow(this.data().getSpAccountId());
             account.send(this);
         }

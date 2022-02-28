@@ -32,9 +32,8 @@ public class MessageRepo {
     MessageTemplateRepo messageTemplateRepo;
 
     /**
-     * 根据关联的第三方消息 id 查找消息实体
-     *
      * @param id 第三方消息 id
+     * @return 根据关联的第三方消息 id 查找到的消息实体
      */
     public Optional<Message> getByThirdId(String id) {
         throw new NotImplementedException();
@@ -42,6 +41,9 @@ public class MessageRepo {
 
     /**
      * 创建一条新的消息实体（初始状态默认为 {@link  Message.Status#NOT_SEND}）
+     *
+     * @return 新增的消息实体
+     * @throws CreateMessageException 消息创建失败
      */
     public Message create(MessageDO data) throws CreateMessageException {
         data.setStatus(Message.Status.NOT_SEND);
@@ -75,6 +77,11 @@ public class MessageRepo {
         return message;
     }
 
+    /**
+     * @param massId 消息集 id
+     * @param limit  列表最大数量
+     * @return 查询到的消息列表
+     */
     public List<Message> listByMassId(Long massId, long limit) {
         return this.dao.selectListByMassId(massId, limit)
                 .stream()
@@ -82,6 +89,10 @@ public class MessageRepo {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @param subMassId 消息子集 id
+     * @return 查询到的消息列表
+     */
     public List<Message> listBySubMassId(Long subMassId) {
         return this.toEntities(this.dao.selectListBySubMassId(subMassId));
     }

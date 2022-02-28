@@ -1,7 +1,7 @@
 package pigeon.core.data;
 
-import pigeon.core.entity.core.SubMass;
 import lombok.Data;
+import pigeon.core.entity.core.SubMass;
 
 /**
  * @author taccisum - liaojinfeng6938@dingtalk.com
@@ -37,7 +37,7 @@ public abstract class SubMassDO implements DataObject<Long> {
     private Integer start;
 
     /**
-     * 终止坐标
+     * @return 终止坐标
      */
     public Integer getEnd() {
         return start + size;

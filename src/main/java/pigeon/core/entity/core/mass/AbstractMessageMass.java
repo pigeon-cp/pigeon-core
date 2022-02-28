@@ -79,6 +79,9 @@ public abstract class AbstractMessageMass extends Entity.Base<Long> implements M
         });
     }
 
+    /**
+     * @throws DeliverException 消息分发失败
+     */
     protected abstract void doDeliver() throws DeliverException;
 
     @Override

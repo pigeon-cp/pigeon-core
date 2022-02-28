@@ -21,6 +21,8 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
 
     /**
      * 获取此集合下的所有消息实体
+     *
+     * @return 消息实体列表
      */
     default List<Message> listMessages() {
         return this.listMessages(100L);
@@ -30,6 +32,7 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
      * 获取此集合下的所有消息实体（注意：消息的数量巨大时性可能会十分低下）
      *
      * @param limit 最大数量，建议不要超过 100
+     * @return 消息实体列表
      */
     List<Message> listMessages(long limit);
 
@@ -75,6 +78,8 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
 
     /**
      * 获取此消息集归属的群发策略实体
+     *
+     * @return 此消息集关联的策略
      */
     Optional<MassTactic> getTactic();
 
@@ -82,6 +87,8 @@ public interface MessageMass extends Entity<Long>, EventPublisher {
 
     /**
      * 判断 mass 是否已 prepared
+     *
+     * @return true or false
      */
     boolean hasPrepared();
 

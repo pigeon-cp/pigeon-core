@@ -10,10 +10,14 @@ public abstract class InfoUtils {
      * 省略超出长度的信息，并替换最后三个字符为 "..."
      *
      * 例：
-     * - omit('abcdefg', 5) -> ab...
-     * - omit('abcd', 5) -> abcd
-     * - omit('abc', 3) -> ...
+     * - omit('abcdefg', 5) =&gt; ab...
+     * - omit('abcd', 5) =&gt; abcd
+     * - omit('abc', 3) =&gt; ...
      * </pre>
+     *
+     * @param info 原始信息
+     * @param size 保留长度
+     * @return 省略后的字符串
      */
     public static String omit(String info, int size) {
         if (info == null) {

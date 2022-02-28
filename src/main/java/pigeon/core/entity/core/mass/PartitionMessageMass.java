@@ -1,12 +1,12 @@
 package pigeon.core.entity.core.mass;
 
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Timer;
+import org.springframework.util.CollectionUtils;
 import pigeon.core.entity.core.PartitionCapable;
 import pigeon.core.entity.core.SubMass;
 import pigeon.core.repo.SubMassRepo;
 import pigeon.core.utils.MagnitudeUtils;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.Timer;
-import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -142,13 +142,12 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
 
     /**
      * <pre>
-     * 获取切片时可以支持的最大子集 size
-     *
      * 子类实现时可以根据具体消息类型限制最大子集数量，由此来避免一些问题，如：
      * - 子集数据量过大导致相应任务缓慢
      * - 子集数量超过出服务商单次允许发送最大值，导致调用失败
      * </pre>
      *
+     * @return 切片时可以支持的最大子集 size
      * @since 0.2
      */
     protected int maxSubMassSize() {
@@ -242,7 +241,7 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
     }
 
     /**
-     * 获取当前消息集的分发进度
+     * @return 当前消息集的分发进度
      */
     public DeliverProcess getProcess() {
         DeliverProcess.Local process = DeliverProcess.Local.PROCESSES.get(this.id());
@@ -260,7 +259,7 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
 
     public interface DeliverProcess {
         /**
-         * 获取起始时间
+         * @return 分发起始时间
          */
         Date getStartTime();
 
@@ -270,7 +269,7 @@ public class PartitionMessageMass extends AbstractMessageMass implements Partiti
         void increase();
 
         /**
-         * 判断进度是否 100%
+         * @return 是否完成，即进度是否 100%
          */
         boolean isFinished();
 

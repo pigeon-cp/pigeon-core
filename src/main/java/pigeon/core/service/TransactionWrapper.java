@@ -13,7 +13,7 @@ import java.util.function.Supplier;
  * @since 0.2
  */
 @Service
-public class TransactionWrapper {
+class TransactionWrapper {
 
     /**
      * 在 {@link Propagation#REQUIRES_NEW} 传播行为中执行此动作

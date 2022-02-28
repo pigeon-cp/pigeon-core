@@ -17,8 +17,9 @@ import pigeon.core.data.MessageDO;
 import pigeon.core.entity.core.holder.MessageDelivererHolder;
 import pigeon.core.entity.core.sp.MessageServiceProvider;
 import pigeon.core.repo.MessageTemplateRepo;
+import pigeon.core.repo.MessageTemplateRepo.MessageTemplateNotFoundException;
 import pigeon.core.repo.ServiceProviderRepo;
-import pigeon.core.repo.ThirdAccountRepo;
+import pigeon.core.repo.ThirdAccountRepo.NotFoundException;
 import pigeon.core.utils.InfoUtils;
 
 import javax.annotation.Resource;
@@ -115,11 +116,9 @@ public abstract class Message extends Entity.Base<Long> {
     }
 
     /**
-     * <pre>
      * 判断此消息是否必须要关联模板
      *
-     * 有些消息（如短信）可能必需要提前在运营商备案模板方可发送，此时应返回 true，其它返回 false
-     * </pre>
+     * @return 有些消息（如短信）可能必需要提前在运营商备案模板方可发送，此时应返回 true，其它返回 false
      */
     public boolean shouldRelateTemplate() {
         return false;
@@ -131,13 +130,15 @@ public abstract class Message extends Entity.Base<Long> {
      *
      * * 在消息分发成功后，实时消息直接变为完成状态，而非实时消息则是变为已分发状态（一般是接受到第三方待异步回调通知后再变更为完成）
      * </pre>
+     *
+     * @return true: 实时消息，false: 非实时消息
      */
     public abstract boolean isRealTime();
 
     /**
      * 执行消息投递的具体逻辑
      */
-    protected void doDelivery() throws Exception {
+    protected void doDelivery() {
         if (this instanceof MessageDelivererHolder) {
             ((MessageDelivererHolder) this).getMessageDeliverer().deliver(this.data());
         }
@@ -146,23 +147,37 @@ public abstract class Message extends Entity.Base<Long> {
 
     /**
      * 获取此消息关联的服务提供商
+     *
+     * @return 消息服务提供商
      */
     public abstract MessageServiceProvider getServiceProvider();
 
     /**
      * 获取发送此消息所使用的服务商账号
+     *
+     * @return 服务商账号
      */
-    public ThirdAccount getSpAccount() throws ThirdAccountRepo.NotFoundException {
-        return this.getServiceProvider()
-                .getAccountOrThrow(this.data().getSpAccountId());
+    public ThirdAccount getSpAccount() {
+        try {
+            return this.getServiceProvider()
+                    .getAccountOrThrow(this.data().getSpAccountId());
+        } catch (NotFoundException e) {
+            throw new DataErrorException("消息", this.id(), "关联的三方账号不存在");
+        }
     }
 
     /**
      * 获取此消息关联的模板
+     *
+     * @return 消息模板
      */
-    public MessageTemplate getMessageTemplate() throws MessageTemplateRepo.MessageTemplateNotFoundException {
+    public MessageTemplate getMessageTemplate() {
         if (this.shouldRelateTemplate()) {
-            return messageTemplateRepo.getOrThrow(this.data().getTemplateId());
+            try {
+                return messageTemplateRepo.getOrThrow(this.data().getTemplateId());
+            } catch (MessageTemplateNotFoundException e) {
+                throw new DataErrorException("消息", this.id(), "关联的消息模板不存在");
+            }
         }
         return messageTemplateRepo.get(this.data().getTemplateId())
                 .orElse(null);

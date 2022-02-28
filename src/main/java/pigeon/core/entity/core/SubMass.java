@@ -3,8 +3,8 @@ package pigeon.core.entity.core;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
 import com.github.taccisum.domain.core.EventPublisher;
-import pigeon.core.data.SubMassDO;
 import lombok.Getter;
+import pigeon.core.data.SubMassDO;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ public interface SubMass extends Entity<Long>, EventPublisher {
     SubMassDO data();
 
     /**
-     * 获取集合大小
+     * @return 集合大小
      */
     int size();
 
@@ -33,12 +33,12 @@ public interface SubMass extends Entity<Long>, EventPublisher {
     void deliver();
 
     /**
-     * 获取子集下的所有消息
+     * @return 子集下的所有消息
      */
     List<Message> listAllMessages();
 
     /**
-     * 获取当前子集所属的消息集
+     * @return 当前子集所属的消息集
      */
     MessageMass getMain();
 

@@ -1,12 +1,12 @@
 package pigeon.core.entity.core.message;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pigeon.core.data.MessageDO;
 import pigeon.core.entity.core.Message;
 import pigeon.core.entity.core.ThirdAccount;
 import pigeon.core.entity.core.sp.MessageServiceProvider;
 import pigeon.core.repo.ThirdAccountRepo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 通过日志框架打印的消息
@@ -27,7 +27,7 @@ public class LogMessage extends Message {
     }
 
     @Override
-    protected void doDelivery() throws Exception {
+    protected void doDelivery() {
         MessageDO data = this.data();
         log.info("To {}.\n{}\n{}\n  - by {}",
                 data.getTarget(),

@@ -70,12 +70,21 @@ public class Factory implements com.github.taccisum.domain.core.Factory {
     }
 
     /**
+     * @param id   mass id
+     * @param type mass 类型
      * @deprecated {@link #createMessageMass(Long, String, String, String)}
      */
     public MessageMass createMessageMass(Long id, String type) {
         return this.createMessageMass(id, type, null, null);
     }
 
+    /**
+     * @param id          消息 id
+     * @param type        消息类型
+     * @param spType      服务商类型
+     * @param messageType 消息类型
+     * @return
+     */
     public MessageMass createMessageMass(Long id, String type, String spType, String messageType) {
         return this.create(
                 id,

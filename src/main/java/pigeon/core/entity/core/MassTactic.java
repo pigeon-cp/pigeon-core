@@ -17,7 +17,6 @@ import pigeon.core.data.MessageMassDO;
 import pigeon.core.entity.core.mass.PartitionMessageMass;
 import pigeon.core.repo.MessageMassRepo;
 import pigeon.core.repo.MessageTemplateRepo;
-import pigeon.core.service.TransactionWrapper;
 import pigeon.core.valueobj.MessageInfo;
 import pigeon.core.valueobj.Source;
 
@@ -58,12 +57,15 @@ public abstract class MassTactic extends Entity.Base<Long> {
 
     /**
      * 测试此策略
+     *
+     * @return 测试消息集
      */
     public final MessageMass test() {
         throw new NotImplementedException();
     }
 
     /**
+     * @return 群发消息集
      * @deprecated use {@link #execAsync()} instead
      */
     public final MessageMass exec() throws ExecException {
@@ -74,6 +76,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行此策略
      *
      * @param boost 是否加速分发（例如切片并行操作）
+     * @return 群发消息集
      * @deprecated use {@link #execAsync()} instead
      */
     public final MessageMass exec(boolean boost) throws ExecException {
@@ -109,6 +112,8 @@ public abstract class MassTactic extends Entity.Base<Long> {
 
     /**
      * 异步执行此策略
+     *
+     * @return 群发消息集
      */
     public final CompletableFuture<MessageMass> execAsync() throws ExecException {
         MassTacticDO data = this.data();
@@ -165,6 +170,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     }
 
     /**
+     * @return 消息集
      * @deprecated will remove on 0.3
      */
     public final MessageMass prepare() throws PrepareException {
@@ -175,6 +181,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行策略准备工作（单独执行在海量消息群发场景有助于降低发送时延）
      *
      * @param boost 是否加速
+     * @return 消息集
      * @deprecated will remove on 0.3
      */
     public final MessageMass prepare(boolean boost) throws PrepareException {
@@ -220,6 +227,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 执行准备工作
      *
+     * @return 消息集
      * @deprecated will remove on 0.3
      */
     protected MessageMass doPrepare() {
@@ -230,6 +238,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 执行准备工作
      *
      * @param boost 是否加速
+     * @return 消息集
      * @deprecated will remove on 0.3
      */
     protected MessageMass doPrepare(boolean boost) {
@@ -267,6 +276,9 @@ public abstract class MassTactic extends Entity.Base<Long> {
         }
     }
 
+    /**
+     * @return 消息集
+     */
     protected MessageMass newMass() {
         return newMass(false);
     }
@@ -274,6 +286,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
     /**
      * 创建一个 boost 消息集（仅支持正式发送）
      *
+     * @return 消息集
      * @deprecated will remove on 0.3
      */
     protected MessageMass newBoostMass() {
@@ -284,6 +297,7 @@ public abstract class MassTactic extends Entity.Base<Long> {
      * 创建一个新的消息集
      *
      * @param test 是否测试集
+     * @return 消息集
      */
     protected MessageMass newMass(boolean test) {
         MessageTemplate template = this.getMessageTemplate();
@@ -326,6 +340,11 @@ public abstract class MassTactic extends Entity.Base<Long> {
         return size;
     }
 
+    /**
+     * @param start 起始 index
+     * @param end   结束 index
+     * @return 解析出来的消息信息列表
+     */
     public List<MessageInfo> listMessageInfos(Integer start, Integer end) {
         MessageInfo def = new MessageInfo();
         def.setSender(this.data().getDefaultSender());
@@ -336,6 +355,10 @@ public abstract class MassTactic extends Entity.Base<Long> {
                 .resolve(start, end, this.getSource(), def);
     }
 
+    /**
+     * @return 解析出来的消息信息列表
+     * @see #listMessageInfos(Integer, Integer)
+     */
     public List<MessageInfo> listMessageInfos() {
         MessageInfo def = new MessageInfo();
         def.setSender(this.data().getDefaultSender());
@@ -344,6 +367,11 @@ public abstract class MassTactic extends Entity.Base<Long> {
                 .resolve(this.getSource(), def);
     }
 
+    /**
+     * 获取策略关联的消息模板
+     *
+     * @return 消息模板
+     */
     public MessageTemplate getMessageTemplate() {
         return this.messageTemplateRepo.getOrThrow(this.data().getTemplateId());
     }
@@ -474,9 +502,6 @@ public abstract class MassTactic extends Entity.Base<Long> {
     }
 
     public static class Default extends MassTactic {
-        @Resource
-        private TransactionWrapper transactionWrapper;
-
         public Default(Long id) {
             super(id);
         }

@@ -1,13 +1,13 @@
 package pigeon.core.entity.core.sp.account;
 
-import pigeon.core.data.MessageDO;
-import pigeon.core.data.ThirdAccountDO;
-import pigeon.core.entity.core.ThirdAccount;
-import pigeon.core.entity.core.message.Mail;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import pigeon.core.data.MessageDO;
+import pigeon.core.data.ThirdAccountDO;
+import pigeon.core.entity.core.ThirdAccount;
+import pigeon.core.entity.core.message.Mail;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -29,6 +29,8 @@ public class MailServerAccount extends ThirdAccount {
 
     /**
      * 发送邮件
+     *
+     * @param mail 邮件消息
      */
     public void send(Mail mail) {
         MessageDO data = mail.data();
@@ -49,7 +51,7 @@ public class MailServerAccount extends ThirdAccount {
         this.getSender().send(msg);
     }
 
-    public JavaMailSender getSender() {
+    private JavaMailSender getSender() {
         if (javaMailSender == null) {
             ThirdAccountDO data = this.data();
             JavaMailSenderImpl impl = new JavaMailSenderImpl();

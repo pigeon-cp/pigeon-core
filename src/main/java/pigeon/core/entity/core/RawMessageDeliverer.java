@@ -22,6 +22,7 @@ public interface RawMessageDeliverer {
     /**
      * 投递消息
      *
+     * @param message 消息数据对象
      * @return delivery id
      */
     String deliver(MessageDO message);
@@ -34,6 +35,7 @@ public interface RawMessageDeliverer {
      * 消息集的 {@link MessageMass#prepare()} 阶段调用相关的逻辑以尽可能保证数据是符合预期的
      * </pre>
      *
+     * @param messages 消息数据对象列表
      * @return delivery id
      */
     String deliverBatchFast(List<MessageDO> messages);

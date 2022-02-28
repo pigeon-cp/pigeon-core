@@ -27,7 +27,7 @@ public class DummyMessage extends Message implements MessageDelivererHolder {
     }
 
     @Override
-    protected void doDelivery() throws Exception {
+    protected void doDelivery() {
         // do nothing for this message type
     }
 

@@ -16,20 +16,19 @@ import java.util.stream.Collectors;
  */
 public interface Source {
     /**
-     * 获取目标源输入流
+     * @return 目标源输入流
      * TODO:: throw IOException
      */
     InputStream getInputStream();
 
     /**
-     * 获取数据源的所有行
-     *
+     * @return 数据源的所有行
      * @deprecated 文件太大时可能会导致内存泄漏，后面看看要不要删掉这个方法，或者做控制（比如只读 head x 行）
      */
     List<String> listAllLines();
 
     /**
-     * 获取 source 大小
+     * @return 目标源 size
      */
     int size();
 

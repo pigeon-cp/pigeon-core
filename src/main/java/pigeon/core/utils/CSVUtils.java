@@ -11,12 +11,11 @@ import java.util.Optional;
  */
 public abstract class CSVUtils {
     /**
-     * 根据 header 名获取，否则按索引获取，若均不存在则返回默认值
-     *
      * @param row    csv 行 record
      * @param header header name
      * @param index  索引
      * @param def    默认值
+     * @return 获取到的内容（根据 header 名获取，否则按索引获取，若均不存在则返回默认值）
      */
     public static String getOrDefault(CSVRecord row, String header, Integer index, String def) {
         if (row == null) {

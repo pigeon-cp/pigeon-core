@@ -1,9 +1,9 @@
 package pigeon.core.service;
 
 import com.github.taccisum.domain.core.exception.DataNotFoundException;
-import pigeon.core.repo.SubMassRepo;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import pigeon.core.repo.SubMassRepo;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
  * @author taccisum - liaojinfeng6938@dingtalk.com
  * @since 0.1
  */
-public interface AsyncDeliverSubMassService extends AsyncCommandService<AsyncDeliverSubMassService.DeliverSubMassCommand> {
+interface AsyncDeliverSubMassService extends AsyncCommandService<AsyncDeliverSubMassService.DeliverSubMassCommand> {
     /**
      * 发布命令
      */

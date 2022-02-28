@@ -21,6 +21,7 @@ public interface ServiceProvider extends Entity<String> {
      * 根据 id 获取此服务商下账号
      *
      * @param accountId 账号 id
+     * @return 此服务商下的账号
      */
     Optional<ThirdAccount> getAccount(Long accountId);
 
@@ -28,6 +29,7 @@ public interface ServiceProvider extends Entity<String> {
      * 根据 id 获取此服务商下账号
      *
      * @param accountId 账号 id
+     * @return 此服务商下的账号
      * @throws ThirdAccountRepo.NotFoundException 账号不存在或不属于此 SP
      */
     default ThirdAccount getAccountOrThrow(Long accountId) throws ThirdAccountRepo.NotFoundException {
@@ -58,6 +60,7 @@ public interface ServiceProvider extends Entity<String> {
          * SP 是否匹配此第三方账号
          *
          * @param account 账号
+         * @return true: 匹配，false: 不匹配
          */
         protected abstract boolean match(ThirdAccount account);
     }

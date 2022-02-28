@@ -10,9 +10,8 @@ import java.util.List;
  */
 public interface SubMassDAO extends BaseDAO<SubMassDO> {
     /**
-     * 根据所属消息集 id 查找所有子集
-     *
      * @param mainId main mass id
+     * @return 根据所属消息集 id 查找到的所有子集
      */
     List<SubMassDO> selectByMainId(Long mainId);
 }

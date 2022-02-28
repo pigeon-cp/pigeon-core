@@ -1,10 +1,10 @@
 package pigeon.core.entity.core;
 
 import com.github.taccisum.domain.core.Entity;
-import pigeon.core.entity.core.template.MailTemplate;
-import pigeon.core.entity.core.template.SMSTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pigeon.core.entity.core.template.MailTemplate;
+import pigeon.core.entity.core.template.SMSTemplate;
 
 /**
  * 用户
@@ -20,12 +20,12 @@ public abstract class User extends Entity.Base<String> {
     }
 
     /**
-     * 获取用户手机号码
+     * @return 用户手机号码
      */
     public abstract String getPhoneNum();
 
     /**
-     * 获取用户邮箱账号
+     * @return 用户邮箱账号
      */
     public abstract String getMailAccount();
 
@@ -36,6 +36,9 @@ public abstract class User extends Entity.Base<String> {
      * - 模板为短信模板 {@link SMSTemplate} 或者类型为 {@link Message.Type#SMS}，则返回手机号码
      * - 模板为邮件模板 {@link MailTemplate} 或者类型为 {@link Message.Type#MAIL}，则返回邮箱账号
      * </pre>
+     *
+     * @param template 目标消息模板
+     * @return 适用模板的账号
      */
     public String getAccountFor(MessageTemplate template) {
         String account = null;
@@ -57,9 +60,8 @@ public abstract class User extends Entity.Base<String> {
     }
 
     /**
-     * 获取适用于指定消息类型的账号
-     *
      * @param messageType 消息类型
+     * @return 适用于指定消息类型的账号
      */
     public String getAccountFor(String messageType) {
         switch (messageType) {
