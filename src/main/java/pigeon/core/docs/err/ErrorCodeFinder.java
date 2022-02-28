@@ -23,13 +23,9 @@ public class ErrorCodeFinder {
     private List<String> packages = new ArrayList<>();
     private ErrorCodeMapping errorCodeMapping;
 
-    public ErrorCodeFinder(ErrorCodeMapping errorCodeMapping) {
+    public ErrorCodeFinder(List<String> packages, ErrorCodeMapping errorCodeMapping) {
+        this.packages = packages;
         this.errorCodeMapping = errorCodeMapping;
-    }
-
-    {
-        packages.add("pigeon.core.excp");
-        packages.add("pigeon.core.entity.core");
     }
 
     public List<ErrorCode> findAll() {
