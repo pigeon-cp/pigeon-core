@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.pf4j.DefaultPluginManager;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import pigeon.core.dao.MessageDAO;
 import pigeon.core.entity.core.sp.MessageServiceProvider;
@@ -115,8 +114,5 @@ class MessageTest {
         public MessageServiceProvider getServiceProvider() {
             return null;
         }
-    }
-
-    public static class DummyPluginManager extends DefaultPluginManager {
     }
 }
