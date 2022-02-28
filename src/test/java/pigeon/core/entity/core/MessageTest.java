@@ -1,7 +1,7 @@
 package pigeon.core.entity.core;
 
-import pigeon.core.data.MessageDO;
-import pigeon.core.entity.core.sp.MessageServiceProvider;
+import lombok.Getter;
+import lombok.Setter;
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,7 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.pf4j.DefaultPluginManager;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import pigeon.core.dao.MessageDAO;
+import pigeon.core.data.MessageDO;
+import pigeon.core.entity.core.sp.MessageServiceProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,14 +30,18 @@ class MessageTest {
 
     @BeforeEach
     void setUp() {
-        message = spy(new FooMessage(1L));
+        this.message = spy(new FooMessage(1L));
+        this.message.dao = mock(MessageDAO.class);
+        when(this.message.dao.newEmptyDataObject()).thenReturn(new MessageDOImpl());
     }
 
     @Nested
+    @DisplayName("#deliver()")
     class deliver {
         @Test
         @DisplayName("index")
         void index() throws Exception {
+            doReturn(new MessageDOImpl()).when(message).data();
             doNothing().when(message).doDelivery();
             doNothing().when(message).updateStatus(any(), any());
             doNothing().when(message).publish(any());
@@ -46,6 +54,7 @@ class MessageTest {
         @Test
         @DisplayName("doDelivery() 发生任何异常均会被处理")
         void doDeliveryFail() throws Exception {
+            doReturn(new MessageDOImpl()).when(message).data();
             doThrow(new RuntimeException("test")).when(message).doDelivery();
             doNothing().when(message).updateStatus(any(), any());
             doNothing().when(message).publish(any());
@@ -58,7 +67,7 @@ class MessageTest {
         @Test
         @DisplayName("必须关联模板时 template id 不能为空")
         void shouldHaveTemplateId() throws Exception {
-            doReturn(mock(MessageDO.class)).when(message).data();
+            doReturn(new MessageDOImpl()).when(message).data();
             doReturn(true).when(message).shouldRelateTemplate();
 
             Assert.assertThrows(Message.DeliverException.class, () -> {
@@ -70,7 +79,7 @@ class MessageTest {
         @ValueSource(booleans = {true, false})
         @DisplayName("实时发送的消息直接标记发送结果")
         void markSentIfRealTimeMessage(boolean success) throws Exception {
-            doReturn(mock(MessageDO.class)).when(message).data();
+            doReturn(new MessageDOImpl()).when(message).data();
             doReturn(true).when(message).isRealTime();
 
             if (success) {
@@ -108,5 +117,14 @@ class MessageTest {
         public MessageServiceProvider getServiceProvider() {
             return null;
         }
+    }
+
+    private static class MessageDOImpl extends MessageDO {
+        @Getter
+        @Setter
+        private Long id;
+    }
+
+    public static class DummyPluginManager extends DefaultPluginManager {
     }
 }

@@ -3,6 +3,7 @@ package pigeon.core.entity.core;
 import com.github.taccisum.domain.core.DomainException;
 import com.github.taccisum.domain.core.Entity;
 import com.github.taccisum.domain.core.Event;
+import com.github.taccisum.domain.core.exception.DataErrorException;
 import com.github.taccisum.domain.core.exception.annotation.ErrorCode;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
@@ -21,6 +22,7 @@ import pigeon.core.repo.ThirdAccountRepo;
 import pigeon.core.utils.InfoUtils;
 
 import javax.annotation.Resource;
+import java.util.Optional;
 
 /**
  * 业务消息基类，可以是短信、推送、微信等等（取决于具体实现）
@@ -47,7 +49,11 @@ public abstract class Message extends Entity.Base<Long> {
 
     public MessageDO data() {
         if (data == null) {
-            return this.dao.selectById(this.id());
+            MessageDO data = this.dao.selectById(this.id());
+            if (data == null) {
+                throw new DataErrorException("消息", this.id(), "不存在但实例化成功");
+            }
+            return data;
         }
         return data;
     }
@@ -73,8 +79,8 @@ public abstract class Message extends Entity.Base<Long> {
         Timer timer = Timer.builder("message.delivery")
                 .description("消息投递（delivery）耗费时间")
                 .tag("class", this.getClass().getName())
-                .tag("type", data.getType())
-                .tag("sp", data.getSpType())
+                .tag("type", Optional.ofNullable(data.getType()).orElse("UNKNOWN"))
+                .tag("sp", Optional.ofNullable(data.getSpType()).orElse("UNKNOWN"))
                 .publishPercentiles(0.5, 0.95)
                 .register(Metrics.globalRegistry);
 
