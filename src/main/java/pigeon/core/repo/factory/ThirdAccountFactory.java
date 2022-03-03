@@ -1,10 +1,11 @@
 package pigeon.core.repo.factory;
 
+import lombok.Data;
+import org.pf4j.Extension;
 import pigeon.core.entity.core.ThirdAccount;
 import pigeon.core.entity.core.sp.account.MailServerAccount;
 import pigeon.core.repo.EntityFactory;
-import lombok.Data;
-import org.pf4j.Extension;
+import pigeon.core.repo.Factory;
 
 /**
  * @author taccisum - liaojinfeng6938@dingtalk.com
@@ -37,7 +38,7 @@ public interface ThirdAccountFactory extends EntityFactory<Long, ThirdAccount, T
                 case "MAIL_SERVER":
                     return new MailServerAccount(id);
                 default:
-                    throw new UnsupportedOperationException(criteria.getType());
+                    throw new Factory.CreateEntityException("core", id, criteria, ThirdAccountFactory.class);
             }
         }
 
